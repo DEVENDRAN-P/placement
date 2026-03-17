@@ -1,0 +1,55 @@
+{
+  "name": "career-intelligence-portal",
+  "version": "1.0.0",
+  "description": "AI-Powered Career Intelligence & Placement Portal",
+  "main": "server/index.js",
+  "scripts": {
+    "dev": "concurrently \"npm run server\" \"npm run client\"",
+    "server": "nodemon server/index.js",
+    "client": "cd client && npm start",
+    "build": "cd client && npm run build",
+    "start": "node server/index.js",
+    "install-all": "npm install && cd client && npm install"
+  },
+  "keywords": [
+    "career",
+    "placement",
+    "ai",
+    "portal",
+    "education"
+  ],
+  "author": "Career Intelligence Team",
+  "license": "MIT",
+  "dependencies": {
+    "axios": "^1.5.0",
+    "bcryptjs": "^2.4.3",
+    "chart.js": "^4.4.0",
+    "cheerio": "^1.0.0-rc.12",
+    "compromise": "^14.10.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "express-rate-limit": "^6.10.0",
+    "express-validator": "^7.0.1",
+    "helmet": "^7.0.0",
+    "jsonwebtoken": "^9.0.2",
+    "mammoth": "^1.6.0",
+    "ml-matrix": "^6.11.0",
+    "ml-regression": "^5.0.0",
+    "moment": "^2.29.4",
+    "mongoose": "^7.5.0",
+    "multer": "^1.4.5-lts.1",
+    "natural": "^6.5.0",
+    "node-cron": "^4.2.1",
+    "nodemailer": "^6.9.4",
+    "pdf-parse": "^1.1.1",
+    "puppeteer": "^21.1.1",
+    "sharp": "^0.32.5",
+    "socket.io": "^4.7.2",
+    "uuid": "^9.0.0"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.0",
+    "nodemon": "^3.0.1"
+  }
+}
