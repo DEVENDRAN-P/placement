@@ -155,16 +155,59 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       setIsLoading(true);
       console.log('🔐 Attempting login for:', email);
+      
+      // Authenticate with Firebase
       const result = await signInWithEmailAndPassword(auth, email, password);
-      console.log('✅ Login successful for:', email);
+      const fbUser = result.user;
+      console.log('✅ Firebase login successful for:', email);
+      
+      // Parse display name if available, or use email as fallback
+      const nameParts = fbUser.displayName?.split(' ') || ['User', ''];
+      const firstName = nameParts[0] || 'User';
+      const lastName = nameParts[1] || fbUser.email?.split('@')[0] || 'Profile';
       
       try {
-        const idToken = await result.user.getIdToken();
-        setToken(idToken);
-        localStorage.setItem('token', idToken);
-        console.log('✅ ID token obtained and stored');
-      } catch (tokenError) {
-        console.warn('⚠️ Could not set token:', tokenError);
+        // Call backend firebase-login endpoint to sync user with MongoDB
+        const response = await axios.post(
+          `${process.env.REACT_APP_API_URL}/auth/firebase-login`,
+          {
+            email: fbUser.email,
+            firstName,
+            lastName,
+            photoURL: fbUser.photoURL,
+            role: 'student', // Default role, can be updated in profile
+          }
+        );
+
+        if (response.data.success) {
+          const { token, user: backendUser, profileData } = response.data.data;
+          
+          // Store backend JWT token
+          localStorage.setItem('token', token);
+          localStorage.setItem('user', JSON.stringify(backendUser));
+          
+          setToken(token);
+          setFirebaseUser(fbUser);
+          
+          const normalizedUser = createUserFromFirebase(fbUser, backendUser.role);
+          setUser(normalizedUser);
+          setProfileData(profileData);
+          setIsAuthenticated(true);
+          
+          console.log('✅ Backend sync successful, using JWT token');
+        } else {
+          throw new Error(response.data.message || 'Backend sync failed');
+        }
+      } catch (backendError: any) {
+        console.warn('⚠️ Backend sync failed, but Firebase auth succeeded:', backendError.message);
+        // Still allow Firebase login even if backend sync fails
+        try {
+          const idToken = await fbUser.getIdToken();
+          setToken(idToken);
+          localStorage.setItem('firebaseToken', idToken);
+        } catch (tokenError) {
+          console.warn('⚠️ Could not get Firebase token:', tokenError);
+        }
       }
     } catch (error: any) {
       const errorCode = error.code;
@@ -311,6 +354,36 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       // Wait for auth state listener to process the new user
       await new Promise(resolve => setTimeout(resolve, 100));
+
+      // Sync with backend MongoDB
+      try {
+        const response = await axios.post(
+          `${process.env.REACT_APP_API_URL}/auth/firebase-login`,
+          {
+            email: fbUser.email,
+            firstName: userData.firstName,
+            lastName: userData.lastName,
+            photoURL: fbUser.photoURL,
+            role: userData.role,
+          }
+        );
+
+        if (response.data.success) {
+          const { token, user: backendUser, profileData } = response.data.data;
+          
+          // Store backend JWT token
+          localStorage.setItem('token', token);
+          localStorage.setItem('user', JSON.stringify(backendUser));
+          
+          setToken(token);
+          setProfileData(profileData);
+          
+          console.log('✅ Backend sync successful for new registration');
+        }
+      } catch (backendError: any) {
+        console.warn('⚠️ Backend sync failed during registration:', backendError.message);
+        // Don't fail registration if backend sync fails
+      }
 
       console.log('✅ Registration successful for:', userData.email);
     } catch (error: any) {

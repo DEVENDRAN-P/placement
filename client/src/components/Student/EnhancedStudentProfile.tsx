@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '../../context/FirebaseAuthContext';
+import { useAuth } from '../../context/AuthContext';
 import { studentAPI } from '../../services/api';
 import { AlertCircle, CheckCircle, Upload, Plus, Trash2, ExternalLink } from 'lucide-react';
 
@@ -11,7 +11,7 @@ interface StudentProfile {
     phone: string;
     profilePicture?: string;
   };
-  academic?: {
+  academicInfo?: {
     rollNumber: string;
     department: string;
     college: string;
@@ -78,7 +78,7 @@ const EnhancedStudentProfile: React.FC = () => {
   const [currentStep, setCurrentStep] = useState(1);
   const [profile, setProfile] = useState<StudentProfile>({
     personal: { firstName: '', lastName: '', email: '', phone: '' },
-    academic: { rollNumber: '', department: '', college: '', year: 1, semester: 1, cgpa: 0, attendance: 0, verified: false },
+    academicInfo: { rollNumber: '', department: '', college: '', year: 1, semester: 1, cgpa: 0, attendance: 0, verified: false },
     skills: [],
     projects: [],
     achievements: [],
@@ -179,7 +179,7 @@ const EnhancedStudentProfile: React.FC = () => {
   const renderAcademicStep = () => (
     <div className="space-y-4">
       <h2 className="text-2xl font-bold text-gray-900">Academic Information</h2>
-      {profile.academic?.verified && (
+      {profile.academicInfo?.verified && (
         <div className="bg-green-50 border border-green-200 rounded-lg p-4 flex items-center gap-2">
           <CheckCircle className="text-green-600" />
           <span className="text-green-700">College Verified</span>
@@ -189,30 +189,30 @@ const EnhancedStudentProfile: React.FC = () => {
         <input
           type="text"
           placeholder="College Name"
-          value={profile.academic?.college || ''}
+          value={profile.academicInfo?.college || ''}
           onChange={(e) => setProfile({
             ...profile,
-            academic: { ...profile.academic, college: e.target.value } as typeof profile.academic
+            academicInfo: { ...profile.academicInfo, college: e.target.value } as typeof profile.academicInfo
           })}
           className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
         <input
           type="text"
           placeholder="Roll Number"
-          value={profile.academic?.rollNumber || ''}
+          value={profile.academicInfo?.rollNumber || ''}
           onChange={(e) => setProfile({
             ...profile,
-            academic: { ...profile.academic, rollNumber: e.target.value } as typeof profile.academic
+            academicInfo: { ...profile.academicInfo, rollNumber: e.target.value } as typeof profile.academicInfo
           })}
           className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
         <select
           id="dept-select-1"
           title="Select department"
-          value={profile.academic?.department || ''}
+          value={profile.academicInfo?.department || ''}
           onChange={(e) => setProfile({
             ...profile,
-            academic: { ...profile.academic, department: e.target.value } as typeof profile.academic
+            academicInfo: { ...profile.academicInfo, department: e.target.value } as typeof profile.academicInfo
           })}
           className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
@@ -226,10 +226,10 @@ const EnhancedStudentProfile: React.FC = () => {
         <select
           id="year-select"
           title="Select year"
-          value={profile.academic?.year || 1}
+          value={profile.academicInfo?.year || 1}
           onChange={(e) => setProfile({
             ...profile,
-            academic: { ...profile.academic, year: parseInt(e.target.value) } as typeof profile.academic
+            academicInfo: { ...profile.academicInfo, year: parseInt(e.target.value) } as typeof profile.academicInfo
           })}
           className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
@@ -244,10 +244,10 @@ const EnhancedStudentProfile: React.FC = () => {
           min="0"
           max="10"
           step="0.01"
-          value={profile.academic?.cgpa || 0}
+          value={profile.academicInfo?.cgpa || 0}
           onChange={(e) => setProfile({
             ...profile,
-            academic: { ...profile.academic, cgpa: parseFloat(e.target.value) } as typeof profile.academic
+            academicInfo: { ...profile.academicInfo, cgpa: parseFloat(e.target.value) } as typeof profile.academicInfo
           })}
           className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
@@ -256,10 +256,10 @@ const EnhancedStudentProfile: React.FC = () => {
           placeholder="Attendance (%)"
           min="0"
           max="100"
-          value={profile.academic?.attendance || 0}
+          value={profile.academicInfo?.attendance || 0}
           onChange={(e) => setProfile({
             ...profile,
-            academic: { ...profile.academic, attendance: parseFloat(e.target.value) } as typeof profile.academic
+            academicInfo: { ...profile.academicInfo, attendance: parseFloat(e.target.value) } as typeof profile.academicInfo
           })}
           className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
@@ -627,7 +627,7 @@ const EnhancedStudentProfile: React.FC = () => {
     try {
       const response: any = await studentAPI.createProfile({
         personal: profile.personal,
-        academic: profile.academic,
+        academicInfo: profile.academicInfo,
         skills: profile.skills,
         projects: profile.projects,
         achievements: profile.achievements,
@@ -743,3 +743,4 @@ const EnhancedStudentProfile: React.FC = () => {
 };
 
 export default EnhancedStudentProfile;
+

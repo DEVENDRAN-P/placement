@@ -45,40 +45,23 @@ router.post(
         "academicInfo.backlogCount": { $lte: requirements.maxBacklogs || 2 },
       }).populate("college", "name code");
 
-      // If no eligible students found, return fallback data
+      // If no eligible students found, return appropriate response
       if (eligibleStudents.length === 0) {
         return res.json({
           success: true,
           message:
-            "No students currently available, showing sample suggestions",
+            "No students match the specified criteria. Please adjust the requirements.",
           data: {
             totalEligible: 0,
-            shortlisted: [
-              {
-                id: "1",
-                name: "Sample Student 1",
-                cgpa: 8.2,
-                department: "Computer Science",
-                codingRating: 1900,
-                projects: 3,
-                certifications: 2,
-                matchScore: 85,
-              },
-              {
-                id: "2",
-                name: "Sample Student 2",
-                cgpa: 7.8,
-                department: "Information Technology",
-                codingRating: 1700,
-                projects: 2,
-                certifications: 1,
-                matchScore: 78,
-              },
-            ],
+            shortlisted: [],
             statistics: {
-              averageCGPA: 8.0,
-              averageCodingRating: 1800,
+              availableStudents: 0,
+              matchedStudents: 0,
+              averageCGPA: 0,
+              averageCodingRating: 0,
             },
+            recommendation:
+              "Try lowering CGPA requirement or increasing allowed backlogs to find more candidates.",
           },
         });
       }

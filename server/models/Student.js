@@ -177,7 +177,64 @@ const studentSchema = new mongoose.Schema({
     skillGapAnalysis: String,
     careerAdvice: String,
     lastAnalyzed: Date
-  }
+  },
+  referralCode: {
+    type: String,
+    unique: true,
+    sparse: true
+  },
+  referredBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Student'
+  },
+  referralAppliedAt: Date,
+  referralCount: {
+    type: Number,
+    default: 0
+  },
+  referralRewards: {
+    type: Number,
+    default: 0
+  },
+  mockInterviews: [{
+    type: String,
+    score: Number,
+    notes: String,
+    duration: Number,
+    completedAt: Date
+  }],
+  videoProfile: {
+    videoUrl: String,
+    uploadedAt: Date,
+    duration: Number,
+    status: {
+      type: String,
+      enum: ['pending', 'approved', 'rejected'],
+      default: 'pending'
+    }
+  },
+  blockchainCredentials: [{
+    credentialId: {
+      type: String,
+      required: true
+    },
+    credentialType: {
+      type: String,
+      enum: ['degree', 'certificate', 'skill_badge']
+    },
+    issuedAt: Date,
+    status: {
+      type: String,
+      enum: ['issued', 'verified', 'revoked'],
+      default: 'issued'
+    },
+    verificationHash: String,
+    verifiedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'College'
+    },
+    verifiedAt: Date
+  }]
 }, {
   timestamps: true
 });

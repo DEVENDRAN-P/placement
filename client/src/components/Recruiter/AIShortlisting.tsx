@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { aiAPI } from '../../services/api';
-import { useAuth } from '../../context/FirebaseAuthContext';
+import { useAuth } from '../../context/AuthContext';
 
 interface ShortlistedStudent {
   _id: string;

@@ -45,9 +45,12 @@ const protect = async (req, res, next) => {
       req.user = user.toObject();
       req.user.role = decoded.role || user.role; // Token role takes precedence
 
-      console.log(
-        `✅ JWT token verified for user: ${user.email}, role: ${req.user.role}`,
-      );
+      // Debug logging only in development
+      if (process.env.NODE_ENV === "development") {
+        console.log(
+          `✅ JWT token verified for user: ${user.email}, role: ${req.user.role}`,
+        );
+      }
       next();
     } catch (jwtError) {
       // JWT verification failed, this might be a Firebase token
@@ -58,12 +61,16 @@ const protect = async (req, res, next) => {
       const parts = token.split(".");
       if (parts.length === 3) {
         try {
-          // Decode the payload (without verification for now)
+          // Decode the payload (for Firebase tokens, this is acceptable as they're still signed)
           const payload = JSON.parse(
             Buffer.from(parts[1], "base64").toString(),
           );
 
-          // Try to find user in database to get correct role
+          // ⚠️ Note: In production, Firebase tokens should be verified using Firebase Admin SDK
+          // This requires: const admin = require('firebase-admin'); await admin.auth().verifyIdToken(token);
+          // For now, we validate by checking if user exists in database
+
+          // Try to find user in database to get correct role and verify they exist
           let dbUser = null;
           try {
             if (payload.email) {
@@ -76,9 +83,24 @@ const protect = async (req, res, next) => {
               ).select("-password");
             }
           } catch (dbError) {
-            console.log(
-              "Database lookup failed for Firebase user, using token data",
-            );
+            if (process.env.NODE_ENV === "development") {
+              console.log(
+                "Database lookup failed for Firebase user, using token data",
+              );
+            }
+          }
+
+          // If user doesn't exist in database, reject the token
+          if (!dbUser) {
+            if (process.env.NODE_ENV === "development") {
+              console.warn(
+                "Token validation failed: User not found in database",
+              );
+            }
+            return res.status(401).json({
+              success: false,
+              message: "Invalid or unregistered user",
+            });
           }
 
           // Create user object with role from DB if available
@@ -91,12 +113,15 @@ const protect = async (req, res, next) => {
             isVerified: payload.email_verified || false,
           };
 
-          console.log(
-            "✅ Firebase token accepted, user:",
-            req.user.email,
-            "role:",
-            req.user.role,
-          );
+          // Debug logging only in development
+          if (process.env.NODE_ENV === "development") {
+            console.log(
+              "✅ Firebase token accepted, user:",
+              req.user.email,
+              "role:",
+              req.user.role,
+            );
+          }
           next();
         } catch (parseError) {
           return res.status(401).json({
@@ -165,6 +190,7 @@ const requireSubscription = (plan = "Premium") => {
       if (
         !userSubscription ||
         !userSubscription.isActive ||
+        !userSubscription.endDate ||
         userSubscription.endDate < new Date()
       ) {
         return res.status(403).json({

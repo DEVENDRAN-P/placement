@@ -18,6 +18,10 @@ import PlacementAnalytics from './components/College/PlacementAnalytics';
 import PublicRecruiterProfile from './components/Recruiter/PublicRecruiterProfile';
 import CodingGrowthTracker from './components/Student/CodingGrowthTracker';
 import CareerPrediction from './components/Student/CareerPrediction';
+import InterviewPrep from './components/Student/InterviewPrep';
+import ReferralDashboard from './components/Student/ReferralDashboard';
+import VideoProfileUpload from './components/Student/VideoProfileUpload';
+import AdminDashboard from './components/Admin/AdminDashboard';
 
 // Protected Route Component
 interface ProtectedRouteProps {
@@ -27,14 +31,6 @@ interface ProtectedRouteProps {
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requiredRole }) => {
   const { isAuthenticated, user, isLoading } = useAuth();
-
-  console.log('🔐 ProtectedRoute Check:', {
-    requiredRole,
-    isLoading,
-    isAuthenticated,
-    userRole: user?.role,
-    hasUser: !!user
-  });
 
   // Show loading while auth is initializing
   if (isLoading) {
@@ -52,13 +48,11 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requiredRole 
 
   // Redirect to login if not authenticated
   if (!isAuthenticated) {
-    console.log('❌ Not authenticated, redirecting to login');
     return <Navigate to="/login" replace />;
   }
 
   // Check role permission
   if (requiredRole && user?.role !== requiredRole) {
-    console.log('❌ Role mismatch - required:', requiredRole, 'but user has:', user?.role);
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
@@ -70,7 +64,6 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requiredRole 
     );
   }
 
-  console.log('✅ Access granted to protected route for role:', user?.role);
   return <>{children}</>;
 };
 
@@ -142,6 +135,38 @@ function AppContent() {
             element={
               <ProtectedRoute requiredRole="student">
                 <CareerPrediction />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="student/interview-prep"
+            element={
+              <ProtectedRoute requiredRole="student">
+                <InterviewPrep />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="student/referrals"
+            element={
+              <ProtectedRoute requiredRole="student">
+                <ReferralDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="student/video-profile"
+            element={
+              <ProtectedRoute requiredRole="student">
+                <VideoProfileUpload />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="admin"
+            element={
+              <ProtectedRoute requiredRole="admin">
+                <AdminDashboard />
               </ProtectedRoute>
             }
           />

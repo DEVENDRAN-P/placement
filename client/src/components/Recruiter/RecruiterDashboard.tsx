@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link, Navigate } from 'react-router-dom';
 import { analyticsAPI } from '../../services/api';
-import { useAuth } from '../../context/FirebaseAuthContext';
+import { useAuth } from '../../context/AuthContext';
 
 const RecruiterDashboard: React.FC = () => {
   const { isAuthenticated, user } = useAuth();

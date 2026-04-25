@@ -33,9 +33,15 @@ class AIAnalysisService {
 
   // Extract text from different file formats
   static async extractTextFromFile(filePath) {
-    const fileExtension = filePath.split(".").pop().toLowerCase();
-
     try {
+      // Validate file exists first
+      try {
+        await fs.access(filePath);
+      } catch (err) {
+        throw new Error(`File not found: ${filePath}`);
+      }
+
+      const fileExtension = filePath.split(".").pop().toLowerCase();
       const buffer = await fs.readFile(filePath);
 
       switch (fileExtension) {
@@ -57,8 +63,8 @@ class AIAnalysisService {
           throw new Error("Unsupported file format");
       }
     } catch (error) {
-      console.error("Text extraction error:", error);
-      throw new Error("Failed to extract text from file");
+      console.error("Text extraction error:", error.message);
+      throw new Error(`Failed to extract text from file: ${error.message}`);
     }
   }
 
@@ -197,6 +203,19 @@ class AIAnalysisService {
     return Math.round(plagiarismScore);
   }
 
+  // Calculate average coding rating for a student
+  static getAverageCodingRating(student) {
+    if (!student.codingProfiles) return 0;
+    const ratings = [
+      student.codingProfiles.leetcode?.rating || 0,
+      student.codingProfiles.codechef?.rating || 0,
+      student.codingProfiles.codeforces?.rating || 0,
+    ].filter((r) => r > 0);
+    return ratings.length > 0
+      ? Math.round(ratings.reduce((a, b) => a + b) / ratings.length)
+      : 0;
+  }
+
   // Student shortlisting based on job requirements
   static async shortlistStudents(jobRequirements, students) {
     const shortlisted = [];
@@ -259,9 +278,9 @@ class AIAnalysisService {
       score += 20; // If no specific skills required, give partial points
     }
 
-    // Coding performance (20% weight)
+    // Coding performance (20% weight) - FIXED: Calculate rating instead of using virtual
     maxScore += 20;
-    const codingRating = student.averageCodingRating;
+    const codingRating = this.getAverageCodingRating(student);
     if (codingRating > 0) {
       const codingScore = Math.min((codingRating / 2000) * 20, 20);
       score += codingScore;
@@ -331,9 +350,10 @@ class AIAnalysisService {
     }
 
     // Coding
-    if (student.averageCodingRating > 1500) {
+    const codingRating = this.getAverageCodingRating(student);
+    if (codingRating > 1500) {
       reasons.push(
-        `Strong coding profile with ${Math.round(student.averageCodingRating)} average rating`,
+        `Strong coding profile with ${Math.round(codingRating)} average rating`,
       );
     }
 

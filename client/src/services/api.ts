@@ -122,4 +122,32 @@ export const analyticsAPI = {
   generateCustomReport: (reportConfig: any) => api.post('/analytics/custom-report', reportConfig),
 };
 
+// Interview Preparation APIs
+export const interviewPrepAPI = {
+  getResources: (params?: any) => api.get('/interview-prep/resources', { params }),
+  getMockInterview: (type: string) => api.get(`/interview-prep/mock-interview/${type}`),
+  getTips: (companyType: string) => api.get(`/interview-prep/tips/${companyType}`),
+  recordMockInterview: (data: any) => api.post('/interview-prep/record', data),
+  getHistory: () => api.get('/interview-prep/history'),
+};
+
+// Referral APIs
+export const referralAPI = {
+  generateCode: () => api.post('/referrals/generate-code'),
+  applyCode: (referralCode: string) => api.post('/referrals/apply', { referralCode }),
+  getStatus: () => api.get('/referrals/status'),
+};
+
+// Video Profile APIs
+export const videoProfileAPI = {
+  uploadIntroduction: (formData: FormData) => api.post('/video-profile/upload-introduction', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  }),
+  getVideoStatus: () => api.get('/video-profile/video-status'),
+  deleteIntroduction: () => api.delete('/video-profile/delete-introduction'),
+  generateCredential: (credentialType: string) => api.post('/video-profile/generate-credential', { credentialType }),
+  verifyCredential: (credentialId: string) => api.get(`/video-profile/verify-credential/${credentialId}`),
+  getMyCredentials: () => api.get('/video-profile/my-credentials'),
+};
+
 export default api;

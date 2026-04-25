@@ -142,7 +142,7 @@ class EmailService {
         <p>Best regards,<br>Career Intelligence Portal Team</p>
       `,
 
-      preparationResourcesL: `
+      preparationResources: `
         <h2>Interview Preparation Resources</h2>
         <p>Dear ${data.studentName},</p>
         <p>We've compiled resources to help you prepare for your interview at ${data.companyName}:</p>

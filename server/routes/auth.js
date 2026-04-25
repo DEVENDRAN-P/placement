@@ -157,8 +157,16 @@ router.post(
         await recruiter.save();
       }
 
-      // Send verification email
-      await sendVerificationEmail(user, user.verificationToken);
+      // Send verification email (optional - don't fail registration if email fails)
+      try {
+        await sendVerificationEmail(user, user.verificationToken);
+      } catch (emailError) {
+        console.warn(
+          "⚠️ Email verification failed, but registration succeeded:",
+          emailError.message,
+        );
+        // Don't fail the registration - email is optional in development
+      }
 
       res.status(201).json({
         success: true,
@@ -343,6 +351,139 @@ router.get("/me", protect, async (req, res) => {
     });
   }
 });
+
+// Firebase Login/Register (for users registered via Firebase Auth)
+router.post(
+  "/firebase-login",
+  [
+    body("email").isEmail().normalizeEmail(),
+    body("firstName").notEmpty().trim(),
+    body("lastName").notEmpty().trim(),
+    body("role").isIn(["student", "college", "recruiter"]).optional(),
+  ],
+  async (req, res) => {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({
+          success: false,
+          message: "Validation failed",
+          errors: errors.array(),
+        });
+      }
+
+      const {
+        email,
+        firstName,
+        lastName,
+        role = "student",
+        photoURL,
+        phone,
+      } = req.body;
+
+      let user = await User.findOne({ email });
+
+      // If user doesn't exist, create them
+      if (!user) {
+        user = new User({
+          email,
+          password: jwt.sign({ email }, process.env.JWT_SECRET), // Generate a random password for Firebase users
+          role,
+          profile: {
+            firstName,
+            lastName,
+            phone: phone || "",
+            avatar: photoURL || "",
+          },
+          isVerified: true, // Firebase users are considered verified
+          isFirebaseUser: true,
+        });
+
+        await user.save();
+
+        // Create role-specific profile
+        if (role === "student") {
+          // Empty student profile will be completed later
+          console.log("Firebase student registration initiated");
+        } else if (role === "college") {
+          const college = new College({
+            user: user._id,
+            code: `firebase-${Date.now()}`,
+            name: `${firstName} ${lastName}`,
+          });
+          await college.save();
+        } else if (role === "recruiter") {
+          const recruiter = new Recruiter({
+            user: user._id,
+            company: {
+              name: "Not provided",
+              industry: "Not provided",
+            },
+            hrDetails: {
+              name: `${firstName} ${lastName}`,
+              email: email,
+              phone: phone || "",
+            },
+          });
+          await recruiter.save();
+        }
+      } else {
+        // Update existing user profile with Firebase info
+        user.profile.firstName = firstName;
+        user.profile.lastName = lastName;
+        if (photoURL) user.profile.avatar = photoURL;
+        if (phone) user.profile.phone = phone;
+        user.isVerified = true;
+        user.lastLogin = new Date();
+        await user.save();
+      }
+
+      // Update last login
+      user.lastLogin = new Date();
+      await user.save();
+
+      // Generate JWT token
+      const token = generateToken(user._id, user.role);
+
+      // Get role-specific data
+      let profileData = {};
+      if (user.role === "student") {
+        profileData = await Student.findOne({ user: user._id });
+      } else if (user.role === "college") {
+        profileData = await College.findOne({ user: user._id });
+      } else if (user.role === "recruiter") {
+        profileData = await Recruiter.findOne({ user: user._id });
+      }
+
+      res.json({
+        success: true,
+        message: "Firebase login successful",
+        data: {
+          token,
+          user: {
+            id: user._id,
+            email: user.email,
+            role: user.role,
+            profile: user.profile,
+            isVerified: user.isVerified,
+            lastLogin: user.lastLogin,
+          },
+          profileData,
+          isNewUser:
+            !user.createdAt ||
+            new Date().getTime() - new Date(user.createdAt).getTime() < 5000,
+        },
+      });
+    } catch (error) {
+      console.error("Firebase login error:", error);
+      res.status(500).json({
+        success: false,
+        message: "Firebase login failed",
+        error: process.env.NODE_ENV === "development" ? error.message : {},
+      });
+    }
+  },
+);
 
 // Logout
 router.post("/logout", protect, async (req, res) => {

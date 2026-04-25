@@ -4,7 +4,7 @@ const cors = require("cors");
 const helmet = require("helmet");
 const rateLimit = require("express-rate-limit");
 const path = require("path");
-require("dotenv").config();
+require("dotenv").config({ path: path.join(__dirname, "..", ".env") });
 
 const authRoutes = require("./routes/auth");
 const studentRoutes = require("./routes/students");
@@ -15,6 +15,11 @@ const analyticsRoutes = require("./routes/analytics");
 const aiRoutes = require("./routes/ai");
 const notificationsRoutes = require("./routes/notifications");
 const codingPlatformsRoutes = require("./routes/codingPlatforms");
+const interviewPrepRoutes = require("./routes/interviewPrep");
+const referralsRoutes = require("./routes/referrals");
+const videoProfileRoutes = require("./routes/videoProfile");
+const adminRoutes = require("./routes/admin");
+const apiDocsRoutes = require("./routes/apiDocs");
 
 const app = express();
 
@@ -52,8 +57,14 @@ mongoose
       useUnifiedTopology: true,
     },
   )
-  .then(() => console.log("MongoDB connected successfully"))
-  .catch((err) => console.error("MongoDB connection error:", err));
+  .then(() => {
+    if (process.env.NODE_ENV === "development") {
+      console.log("MongoDB connected successfully");
+    }
+  })
+  .catch((err) => {
+    console.error("MongoDB connection error:", err);
+  });
 
 // Routes
 app.use("/api/auth", authRoutes);
@@ -65,6 +76,11 @@ app.use("/api/analytics", analyticsRoutes);
 app.use("/api/ai", aiRoutes);
 app.use("/api/notifications", notificationsRoutes);
 app.use("/api/coding-platforms", codingPlatformsRoutes);
+app.use("/api/interview-prep", interviewPrepRoutes);
+app.use("/api/referrals", referralsRoutes);
+app.use("/api/video-profile", videoProfileRoutes);
+app.use("/api/admin", adminRoutes);
+app.use("/api-docs", apiDocsRoutes);
 
 // Health check endpoint
 app.get("/api/health", (req, res) => {
