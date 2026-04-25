@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
 import { referralAPI } from '../../services/api';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../context/FirebaseAuthContext';
 
 const ReferralDashboard: React.FC = () => {
   const { isAuthenticated, user } = useAuth();

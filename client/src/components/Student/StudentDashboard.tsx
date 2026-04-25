@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { Link, Navigate } from 'react-router-dom';
 import { analyticsAPI, aiAPI, interviewPrepAPI, referralAPI, videoProfileAPI } from '../../services/api';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../context/FirebaseAuthContext';
 
 interface StudentDashboardData {
   academicPerformance?: any;

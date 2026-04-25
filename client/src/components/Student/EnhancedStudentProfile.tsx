@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../context/FirebaseAuthContext';
 import { studentAPI } from '../../services/api';
 import { AlertCircle, CheckCircle, Upload, Plus, Trash2, ExternalLink } from 'lucide-react';
 
