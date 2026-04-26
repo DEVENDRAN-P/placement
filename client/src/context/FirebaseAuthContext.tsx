@@ -82,12 +82,36 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           console.log('User logged in:', firebaseUserData.email);
           setFirebaseUser(firebaseUserData);
           
+          // First, sync with MongoDB backend to ensure user exists there
           try {
-            const idToken = await firebaseUserData.getIdToken();
-            setToken(idToken);
-            localStorage.setItem('token', idToken);
-          } catch (tokenError) {
-            console.warn('Could not get ID token:', tokenError);
+            const response = await axios.post(
+              `${process.env.REACT_APP_API_URL}/auth/firebase-login`,
+              {
+                email: firebaseUserData.email,
+                firstName: firebaseUserData.displayName?.split(' ')[0] || 'User',
+                lastName: firebaseUserData.displayName?.split(' ').slice(1).join(' ') || firebaseUserData.email?.split('@')[0] || 'Profile',
+                photoURL: firebaseUserData.photoURL,
+                role: 'student',
+              }
+            );
+
+            if (response.data.success) {
+              const { token: jwtToken } = response.data.data;
+              // Store JWT token from backend instead of Firebase token
+              localStorage.setItem('token', jwtToken);
+              setToken(jwtToken);
+              console.log('✅ Backend sync successful, using JWT token for:', firebaseUserData.email);
+            }
+          } catch (backendSyncError: any) {
+            console.warn('⚠️ Backend sync failed, attempting with Firebase token:', backendSyncError?.message || backendSyncError);
+            // Fallback to Firebase token if backend sync fails
+            try {
+              const idToken = await firebaseUserData.getIdToken();
+              setToken(idToken);
+              localStorage.setItem('token', idToken);
+            } catch (tokenError) {
+              console.warn('Could not get ID token:', tokenError);
+            }
           }
 
           // Try to fetch user document from Firestore
@@ -253,16 +277,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const fbUser = result.user;
       console.log('✅ Firebase user created:', fbUser.uid);
 
-      // Get ID token immediately
-      try {
-        const idToken = await fbUser.getIdToken();
-        setToken(idToken);
-        localStorage.setItem('token', idToken);
-        console.log('✅ ID token obtained and stored');
-      } catch (tokenError) {
-        console.warn('⚠️ Could not get ID token immediately:', tokenError);
-      }
-
       // Update Firebase user profile
       try {
         await updateFirebaseProfile(fbUser, {
@@ -352,10 +366,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         // Don't fail registration if profile creation fails for other reasons
       }
 
-      // Wait for auth state listener to process the new user
-      await new Promise(resolve => setTimeout(resolve, 100));
-
-      // Sync with backend MongoDB
+      // Sync with backend MongoDB to create user record and get JWT token
       try {
         const response = await axios.post(
           `${process.env.REACT_APP_API_URL}/auth/firebase-login`,
@@ -371,7 +382,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         if (response.data.success) {
           const { token, user: backendUser, profileData } = response.data.data;
           
-          // Store backend JWT token
+          // Store backend JWT token (not Firebase token)
           localStorage.setItem('token', token);
           localStorage.setItem('user', JSON.stringify(backendUser));
           
@@ -379,10 +390,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           setProfileData(profileData);
           
           console.log('✅ Backend sync successful for new registration');
+        } else {
+          throw new Error(response.data.message || 'Backend sync failed');
         }
       } catch (backendError: any) {
-        console.warn('⚠️ Backend sync failed during registration:', backendError.message);
-        // Don't fail registration if backend sync fails
+        console.error('❌ Backend sync failed during registration:', backendError.message);
+        // Throw error to alert user about sync failure
+        throw new Error(`Registration completed in Firebase but failed to sync with backend: ${backendError.message}`);
       }
 
       console.log('✅ Registration successful for:', userData.email);

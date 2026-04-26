@@ -93,13 +93,17 @@ const protect = async (req, res, next) => {
           // If user doesn't exist in database, reject the token
           if (!dbUser) {
             if (process.env.NODE_ENV === "development") {
-              console.warn(
-                "Token validation failed: User not found in database",
+              console.error(
+                `❌ Token validation failed: User not found in database for email: ${payload.email}`,
               );
+              console.error(
+                "This usually means: User authenticated with Firebase but not synced to MongoDB",
+              );
+              console.error("Fix: Call /auth/firebase-login to sync user");
             }
             return res.status(401).json({
               success: false,
-              message: "Invalid or unregistered user",
+              message: "User not found. Please re-login to sync your account.",
             });
           }
 

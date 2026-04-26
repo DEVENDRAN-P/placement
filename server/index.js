@@ -19,19 +19,37 @@ const interviewPrepRoutes = require("./routes/interviewPrep");
 const referralsRoutes = require("./routes/referrals");
 const videoProfileRoutes = require("./routes/videoProfile");
 const adminRoutes = require("./routes/admin");
+const morgan = require("morgan");
+const logger = require("./utils/logger");
+const { apiLimiter } = require("./middleware/rateLimit");
+const Sentry = require("@sentry/node");
+const Tracing = require("@sentry/tracing");
 const apiDocsRoutes = require("./routes/apiDocs");
 
 const app = express();
 
+// Sentry Initialization
+Sentry.init({
+  dsn: process.env.SENTRY_DSN,
+  integrations: [
+    new Sentry.Integrations.Http({ tracing: true }),
+    new Tracing.Integrations.Express({ app }),
+  ],
+  tracesSampleRate: 1.0,
+});
+
+// Sentry request and tracing handlers
+app.use(Sentry.Handlers.requestHandler());
+app.use(Sentry.Handlers.tracingHandler());
+
+// HTTP request logging
+app.use(morgan("combined", { stream: logger.stream }));
+
 // Security middleware
 app.use(helmet());
 
-// Rate limiting
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
-});
-app.use("/api/", limiter);
+// Apply the general API rate limiter to all API routes
+app.use("/api/", apiLimiter);
 
 // CORS configuration
 const allowedOrigins = [
@@ -105,10 +123,17 @@ app.get("/api/health", (req, res) => {
   });
 });
 
+// Sentry error handler must be before any other error middleware
+app.use(Sentry.Handlers.errorHandler());
+
 // Error handling middleware
 app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({
+  logger.error(
+    `${err.status || 500} - ${err.message} - ${req.originalUrl} - ${req.method} - ${req.ip}`,
+  );
+  logger.error(err.stack);
+
+  res.status(err.status || 500).json({
     success: false,
     message: "Something went wrong!",
     error: process.env.NODE_ENV === "development" ? err.message : {},
@@ -117,6 +142,9 @@ app.use((err, req, res, next) => {
 
 // 404 handler
 app.use("*", (req, res) => {
+  logger.warn(
+    `404 - Route not found - ${req.originalUrl} - ${req.method} - ${req.ip}`,
+  );
   res.status(404).json({
     success: false,
     message: "Route not found",
@@ -126,5 +154,5 @@ app.use("*", (req, res) => {
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+  logger.info(`Server is running on port ${PORT}`);
 });

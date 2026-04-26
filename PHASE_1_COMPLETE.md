@@ -17,7 +17,7 @@
 **What Was Wrong:**
 
 ```javascript
-// BEFORE: Tokens decoded but never verified
+// BEFORE: Tokens decoded but never verifie
 const payload = JSON.parse(Buffer.from(parts[1], "base64").toString());
 req.user.role = payload.role || "student"; // ← Anyone can set this!
 ```

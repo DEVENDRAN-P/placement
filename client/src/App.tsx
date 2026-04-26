@@ -15,7 +15,9 @@ import EnhancedStudentProfile from './components/Student/EnhancedStudentProfile'
 import AIShortlisting from './components/Recruiter/AIShortlisting';
 import CollegeVerification from './components/College/CollegeVerification';
 import PlacementAnalytics from './components/College/PlacementAnalytics';
+import PlacementPortal from './components/College/PlacementPortal';
 import PublicRecruiterProfile from './components/Recruiter/PublicRecruiterProfile';
+import PublicStudentProfile from './components/Student/PublicStudentProfile';
 import CodingGrowthTracker from './components/Student/CodingGrowthTracker';
 import CareerPrediction from './components/Student/CareerPrediction';
 import InterviewPrep from './components/Student/InterviewPrep';
@@ -196,6 +198,14 @@ function AppContent() {
               </ProtectedRoute>
             }
           />
+          <Route
+            path="college/placement-portal"
+            element={
+              <ProtectedRoute requiredRole="college">
+                <PlacementPortal />
+              </ProtectedRoute>
+            }
+          />
 
           {/* Recruiter Routes */}
           <Route
@@ -221,6 +231,12 @@ function AppContent() {
                 <PublicRecruiterProfile />
               </ProtectedRoute>
             }
+          />
+
+          {/* Public Student Profile - Accessible to recruiters */}
+          <Route
+            path="student/public/:studentId"
+            element={<PublicStudentProfile />}
           />
         </Route>
 

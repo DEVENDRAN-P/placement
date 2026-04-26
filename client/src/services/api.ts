@@ -150,4 +150,14 @@ export const videoProfileAPI = {
   getMyCredentials: () => api.get('/video-profile/my-credentials'),
 };
 
+// College Placement Management APIs
+export const placementManagementAPI = {
+  getPublicStudentProfile: (studentId: string) => api.get(`/placements/students/public/${studentId}`),
+  filterStudents: (criteria: any) => api.post('/placements/filter', criteria),
+  aiShortlisting: (params: any) => api.post('/placements/shortlist', params),
+  sendPlacementUpdate: (data: any) => api.post('/placements/send-update', data),
+  updatePlacementStatus: (data: any) => api.post('/placements/update-status', data),
+  exportShortlist: (studentIds: string[]) => api.post('/placements/export', { studentIds }),
+};
+
 export default api;

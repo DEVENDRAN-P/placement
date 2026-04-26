@@ -6,6 +6,7 @@ const Student = require("../models/Student");
 const College = require("../models/College");
 const { protect, authorize } = require("../middleware/auth");
 const { fetchCodingStats } = require("../services/codingPlatforms");
+const crypto = require("crypto");
 const { analyzeResume } = require("../services/aiAnalysis");
 
 const router = express.Router();
@@ -790,6 +791,47 @@ router.get("/public/:studentId", async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Failed to get public profile",
+    });
+  }
+});
+
+// Generate a secure, shareable link for the public profile
+router.post("/generate-shareable-link", async (req, res) => {
+  try {
+    const student = await Student.findOne({ user: req.user._id });
+
+    if (!student) {
+      return res.status(404).json({
+        success: false,
+        message: "Student profile not found",
+      });
+    }
+
+    // Generate a secure, random token
+    const token = crypto.randomBytes(20).toString("hex");
+    const expires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+
+    student.publicProfileToken = { token, expires };
+    student.isProfilePublic = true; // Make profile public when link is generated
+    await student.save();
+
+    const shareableLink = `${req.protocol}://${req.get(
+      "host",
+    )}/api/students/public/shared/${token}`;
+
+    res.json({
+      success: true,
+      message: "Shareable link generated. It will expire in 7 days.",
+      data: {
+        shareableLink,
+        expires,
+      },
+    });
+  } catch (error) {
+    console.error("Generate shareable link error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to generate shareable link",
     });
   }
 });
