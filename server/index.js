@@ -20,30 +20,30 @@ const referralsRoutes = require("./routes/referrals");
 const videoProfileRoutes = require("./routes/videoProfile");
 const adminRoutes = require("./routes/admin");
 const morgan = require("morgan");
-const logger = require("./utils/logger");
+// const logger = require("./utils/logger");
 const { apiLimiter } = require("./middleware/rateLimit");
-const Sentry = require("@sentry/node");
-const Tracing = require("@sentry/tracing");
+// const Sentry = require("@sentry/node");
+// const Tracing = require("@sentry/tracing");
 const apiDocsRoutes = require("./routes/apiDocs");
 
 const app = express();
 
-// Sentry Initialization
-Sentry.init({
-  dsn: process.env.SENTRY_DSN,
-  integrations: [
-    new Sentry.Integrations.Http({ tracing: true }),
-    new Tracing.Integrations.Express({ app }),
-  ],
-  tracesSampleRate: 1.0,
-});
+// Sentry Initialization - DISABLED FOR NOW
+// Sentry.init({
+//   dsn: process.env.SENTRY_DSN,
+//   integrations: [
+//     new Sentry.Integrations.Http({ tracing: true }),
+//     new Tracing.Integrations.Express({ app }),
+//   ],
+//   tracesSampleRate: 1.0,
+// });
 
-// Sentry request and tracing handlers
-app.use(Sentry.Handlers.requestHandler());
-app.use(Sentry.Handlers.tracingHandler());
+// Sentry request and tracing handlers - DISABLED FOR NOW
+// app.use(Sentry.Handlers.requestHandler());
+// app.use(Sentry.Handlers.tracingHandler());
 
 // HTTP request logging
-app.use(morgan("combined", { stream: logger.stream }));
+app.use(morgan("combined"));
 
 // Security middleware
 app.use(helmet());
@@ -123,15 +123,15 @@ app.get("/api/health", (req, res) => {
   });
 });
 
-// Sentry error handler must be before any other error middleware
-app.use(Sentry.Handlers.errorHandler());
+// Sentry error handler must be before any other error middleware - DISABLED
+// app.use(Sentry.Handlers.errorHandler());
 
 // Error handling middleware
 app.use((err, req, res, next) => {
-  logger.error(
-    `${err.status || 500} - ${err.message} - ${req.originalUrl} - ${req.method} - ${req.ip}`,
-  );
-  logger.error(err.stack);
+  // logger.error(
+  //   `${err.status || 500} - ${err.message} - ${req.originalUrl} - ${req.method} - ${req.ip}`,
+  // );
+  // logger.error(err.stack);
 
   res.status(err.status || 500).json({
     success: false,
@@ -142,9 +142,9 @@ app.use((err, req, res, next) => {
 
 // 404 handler
 app.use("*", (req, res) => {
-  logger.warn(
-    `404 - Route not found - ${req.originalUrl} - ${req.method} - ${req.ip}`,
-  );
+  // logger.warn(
+  //   `404 - Route not found - ${req.originalUrl} - ${req.method} - ${req.ip}`,
+  // );
   res.status(404).json({
     success: false,
     message: "Route not found",
@@ -154,5 +154,9 @@ app.use("*", (req, res) => {
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
-  logger.info(`Server is running on port ${PORT}`);
+  console.log(`✅ Server is running on port ${PORT}`);
+  console.log(
+    `📦 MongoDB connected to: ${process.env.MONGODB_URI?.split("?")[0]}`,
+  );
+  console.log(`🔥 Career Intelligence Portal API is LIVE`);
 });

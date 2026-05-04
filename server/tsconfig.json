@@ -1,6 +1,7 @@
 {
   "extends": "../client/tsconfig.json",
   "compilerOptions": {
+    "ignoreDeprecations": "6.0",
     "allowJs": true,
     "esModuleInterop": true,
     "types": ["jest", "node"]

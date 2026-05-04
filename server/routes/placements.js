@@ -2,6 +2,7 @@ const express = require("express");
 const { body, validationResult } = require("express-validator");
 const Placement = require("../models/Placement");
 const Student = require("../models/Student");
+const User = require("../models/User");
 const { protect, authorize } = require("../middleware/auth");
 const {
   filterValidationRules,
@@ -11,6 +12,7 @@ const {
   exportValidationRules,
   handleValidationErrors,
 } = require("../middleware/validation");
+const { json2csv } = require("json2csv"); // Added for CSV export
 
 const {
   publicApiLimiter,
@@ -27,7 +29,12 @@ const router = express.Router();
 // Get all active placements (public)
 router.get("/active", publicApiLimiter, async (req, res) => {
   try {
-    const { page = 1, limit = 20, department, location, type } = req.query;
+    let { page = 1, limit = 20, department, location, type } = req.query;
+
+    // Validate and constrain limit
+    limit = Math.min(parseInt(limit) || 20, 100);
+    page = Math.max(parseInt(page) || 1, 1);
+
     const filter = {
       status: "Open",
       "process.registrationDeadline": { $gt: new Date() },
@@ -48,7 +55,7 @@ router.get("/active", publicApiLimiter, async (req, res) => {
     const placements = await Placement.find(filter)
       .populate("company", "company.name company.industry company.size")
       .sort({ "process.registrationDeadline": 1 })
-      .limit(limit * 1)
+      .limit(limit)
       .skip((page - 1) * limit);
 
     const total = await Placement.countDocuments(filter);
@@ -58,7 +65,7 @@ router.get("/active", publicApiLimiter, async (req, res) => {
       data: {
         placements,
         pagination: {
-          current: parseInt(page),
+          current: page,
           pages: Math.ceil(total / limit),
           total,
         },
@@ -468,8 +475,7 @@ router.get(
 // COLLEGE PLACEMENT MANAGEMENT ENDPOINTS
 // ============================================
 
-const User = require("../models/User");
-const emailQueue = require("../services/emailQueue");
+// const emailQueue = require("../services/emailQueue"); // Disabled - no Redis
 
 // Get public student profile via shareable link
 router.get(
@@ -730,24 +736,24 @@ router.post(
     try {
       const { subject, message, studentIds = [] } = req.body;
 
-      const job = await emailQueue.add(
-        { studentIds, subject, message },
-        {
-          attempts: 3, // Retry 3 times
-          backoff: {
-            type: "exponential",
-            delay: 5000, // 5s, 10s, 20s
-          },
-          removeOnComplete: true,
-          removeOnFail: 100, // Keep last 100 failed jobs
-        },
-      );
+      // const job = await emailQueue.add(
+      //   { studentIds, subject, message },
+      //   {
+      //     attempts: 3, // Retry 3 times
+      //     backoff: {
+      //       type: "exponential",
+      //       delay: 5000, // 5s, 10s, 20s
+      //     },
+      //     removeOnComplete: true,
+      //     removeOnFail: 100, // Keep last 100 failed jobs
+      //   },
+      // );
 
       res.json({
         success: true,
-        message: `Email job queued for ${studentIds.length} students.`,
+        message: `Email job queued for ${studentIds.length} students. (Disabled - no Redis)`,
         data: {
-          jobId: job.id,
+          jobId: "disabled",
           timestamp: new Date(),
         },
       });
@@ -832,8 +838,7 @@ router.post(
           { label: "Department", value: "academicInfo.department" },
           { label: "LeetCode", value: "codingProfiles.leetcode.rating" },
         ];
-        const json2csv = new Parser({ fields });
-        const csv = json2csv.parse(students);
+        const csv = json2csv.parse(students, { fields });
         res.header("Content-Type", "text/csv");
         res.attachment("student_export.csv");
         return res.send(csv);

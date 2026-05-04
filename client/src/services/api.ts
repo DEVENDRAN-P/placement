@@ -5,7 +5,7 @@ const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api
 // Create axios instance
 const api = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 5000, // Reduced from 10000 to 5 seconds so it fails fast if no MongoDB
+  timeout: 30000, // 30 seconds to allow for slow network and external API calls
 });
 
 // Request interceptor to add auth token
@@ -158,6 +158,16 @@ export const placementManagementAPI = {
   sendPlacementUpdate: (data: any) => api.post('/placements/send-update', data),
   updatePlacementStatus: (data: any) => api.post('/placements/update-status', data),
   exportShortlist: (studentIds: string[]) => api.post('/placements/export', { studentIds }),
+};
+
+// Coding Platforms APIs
+export const codingPlatformsAPI = {
+  getMyProfiles: () => api.get('/coding-platforms/my-profiles'),
+  fetchAllStats: (usernames: any) => api.post('/coding-platforms/fetch-all-stats', usernames),
+  fetchStats: (platform: string, username: string) => 
+    api.post(`/coding-platforms/fetch-stats/${platform}`, { username }),
+  getGrowthAnalytics: (months?: number) => 
+    api.get('/coding-platforms/growth-analytics', { params: { months } }),
 };
 
 export default api;

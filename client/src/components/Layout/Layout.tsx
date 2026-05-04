@@ -45,172 +45,118 @@ const Layout: React.FC = () => {
       ];
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
-      <header className="bg-white shadow sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            {/* Logo */}
-            <Link to="/dashboard" className="flex items-center space-x-2 flex-shrink-0">
-              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-sm">CP</span>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex flex-col">
+      <header className="bg-white border-b border-slate-200 sticky top-0 z-50 shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="flex justify-between items-center">
+            <Link to="/dashboard" className="flex items-center space-x-3 hover:opacity-80 transition">
+              <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg flex items-center justify-center shadow-md">
+                <span className="text-white font-bold text-lg">CP</span>
               </div>
-              <span className="text-lg font-bold text-gray-900 hidden sm:inline">Career Portal</span>
+              <div>
+                <h1 className="text-xl font-bold text-slate-900">Career Portal</h1>
+                <p className="text-xs text-slate-500">AI-Powered Placement Platform</p>
+              </div>
             </Link>
 
             {/* Desktop Navigation */}
-            <nav className="hidden lg:flex items-center space-x-1">
+            <nav className="hidden md:flex items-center space-x-1">
               {navLinks.map((link) => (
                 <Link
                   key={link.href}
                   to={link.href}
-                  className="px-3 py-2 rounded-md text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition"
+                  className="px-4 py-2 text-slate-700 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition font-medium text-sm"
                 >
                   {link.label}
                 </Link>
               ))}
             </nav>
 
-            {/* User Section */}
+            {/* User Menu */}
             <div className="flex items-center space-x-4">
-              {isAuthenticated && (
-                <>
-                  <div className="hidden sm:flex items-center space-x-2">
-                    <div className="text-right">
-                      <p className="text-sm font-medium text-gray-900">
-                        {user?.profile.firstName} {user?.profile.lastName}
-                      </p>
-                      <p className="text-xs text-gray-500 capitalize">{user?.role}</p>
-                    </div>
+              {isAuthenticated && user ? (
+                <div className="flex items-center space-x-4 border-l border-slate-200 pl-4">
+                  <div className="hidden sm:block text-right">
+                    <p className="text-sm font-semibold text-slate-900">{user?.profile?.firstName || 'User'}</p>
+                    <p className="text-xs text-slate-500 capitalize">{user?.role}</p>
                   </div>
                   <button
                     onClick={handleLogout}
-                    className="px-4 py-2 rounded-lg text-sm font-medium text-white bg-red-600 hover:bg-red-700 transition hidden sm:inline-block"
+                    className="px-4 py-2 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg font-semibold text-sm transition"
                   >
                     Logout
                   </button>
-                </>
-              )}
-
-              {!isAuthenticated && (
-                <div className="hidden sm:flex items-center space-x-2">
-                  <Link
-                    to="/login"
-                    className="px-4 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition"
-                  >
-                    Login
-                  </Link>
-                  <Link
-                    to="/register"
-                    className="px-4 py-2 rounded-lg text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 transition"
-                  >
-                    Register
-                  </Link>
                 </div>
-              )}
-
+              ) : null}
+              
               {/* Mobile Menu Button */}
               <button
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                className="lg:hidden p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+                className="md:hidden p-2 text-slate-600 hover:bg-slate-100 rounded-lg"
               >
-                {mobileMenuOpen ? (
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                ) : (
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                  </svg>
-                )}
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
               </button>
             </div>
           </div>
 
-          {/* Mobile Menu */}
+          {/* Mobile Navigation */}
           {mobileMenuOpen && (
-            <div className="lg:hidden border-t border-gray-200">
-              <div className="px-2 pt-2 pb-3 space-y-1">
-                {navLinks.map((link) => (
-                  <Link
-                    key={link.href}
-                    to={link.href}
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="block px-3 py-2 rounded-md text-base font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100"
-                  >
-                    {link.label}
-                  </Link>
-                ))}
-                {isAuthenticated && (
-                  <button
-                    onClick={() => {
-                      handleLogout();
-                      setMobileMenuOpen(false);
-                    }}
-                    className="w-full text-left px-3 py-2 rounded-md text-base font-medium text-red-600 hover:bg-red-50"
-                  >
-                    Logout ({user?.profile.firstName})
-                  </button>
-                )}
-                {!isAuthenticated && (
-                  <>
-                    <Link
-                      to="/login"
-                      onClick={() => setMobileMenuOpen(false)}
-                      className="block px-3 py-2 rounded-md text-base font-medium text-gray-600 hover:bg-gray-100"
-                    >
-                      Login
-                    </Link>
-                    <Link
-                      to="/register"
-                      onClick={() => setMobileMenuOpen(false)}
-                      className="block px-3 py-2 rounded-md text-base font-medium text-blue-600 hover:bg-blue-50"
-                    >
-                      Register
-                    </Link>
-                  </>
-                )}
-              </div>
-            </div>
+            <nav className="md:hidden mt-4 space-y-2 border-t border-slate-200 pt-4">
+              {navLinks.map((link) => (
+                <Link
+                  key={link.href}
+                  to={link.href}
+                  className="block px-4 py-2 text-slate-700 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  {link.label}
+                </Link>
+              ))}
+            </nav>
           )}
         </div>
       </header>
 
-      <main className="flex-1 max-w-7xl mx-auto w-full py-6 px-4 sm:px-6 lg:px-8">
+      <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
         <Outlet />
       </main>
 
-      {/* Footer */}
-      <footer className="bg-gray-900 text-gray-300 mt-12">
+      <footer className="bg-white border-t border-slate-200 mt-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             <div>
-              <h3 className="text-white font-semibold mb-4">Career Portal</h3>
-              <p className="text-sm">AI-Powered Career Intelligence & Placement Portal</p>
+              <h3 className="text-lg font-bold text-slate-900 mb-4">Career Portal</h3>
+              <p className="text-slate-600 text-sm">Connecting talent with opportunities through AI-powered intelligence.</p>
             </div>
             <div>
-              <h4 className="text-white font-semibold mb-4">Students</h4>
-              <ul className="space-y-2 text-sm">
-                <li><Link to="/student" className="hover:text-white">Dashboard</Link></li>
-                <li><Link to="/student/profile" className="hover:text-white">Profile</Link></li>
+              <h4 className="font-semibold text-slate-900 mb-4">Product</h4>
+              <ul className="space-y-2 text-sm text-slate-600">
+                <li><Link to="/recruiter" className="hover:text-blue-600 transition">For Recruiters</Link></li>
+                <li><Link to="/student/coding-profiles" className="hover:text-blue-600 transition">Coding Profiles</Link></li>
+                <li><Link to="/faq" className="hover:text-blue-600 transition">FAQ</Link></li>
               </ul>
             </div>
             <div>
-              <h4 className="text-white font-semibold mb-4">Recruiters</h4>
-              <ul className="space-y-2 text-sm">
-                <li><Link to="/recruiter" className="hover:text-white">Dashboard</Link></li>
-                <li><Link to="/recruiter/ai-shortlisting" className="hover:text-white">AI Shortlisting</Link></li>
+              <h4 className="font-semibold text-slate-900 mb-4">Support</h4>
+              <ul className="space-y-2 text-sm text-slate-600">
+                <li><Link to="/contact" className="hover:text-blue-600 transition">Contact Us</Link></li>
+                <li><Link to="/faq" className="hover:text-blue-600 transition">Help & Support</Link></li>
+                <li><Link to="/" className="hover:text-blue-600 transition">Status</Link></li>
               </ul>
             </div>
             <div>
-              <h4 className="text-white font-semibold mb-4">Support</h4>
-              <ul className="space-y-2 text-sm">
-                <li><a href="mailto:support@careerportal.com" className="hover:text-white">Contact Us</a></li>
-                <li><a href="#" className="hover:text-white">FAQ</a></li>
+              <h4 className="font-semibold text-slate-900 mb-4">Legal</h4>
+              <ul className="space-y-2 text-sm text-slate-600">
+                <li><Link to="/" className="hover:text-blue-600 transition">Privacy Policy</Link></li>
+                <li><Link to="/" className="hover:text-blue-600 transition">Terms of Service</Link></li>
+                <li><Link to="/contact" className="hover:text-blue-600 transition">Support</Link></li>
               </ul>
             </div>
           </div>
-          <div className="border-t border-gray-800 pt-8 text-center text-sm">
-            <p>&copy; 2024 Career Intelligence Portal. All rights reserved.</p>
+          <div className="border-t border-slate-200 mt-8 pt-8 text-center text-slate-600 text-sm">
+            <p>© 2024 Career Intelligence Portal. All rights reserved.</p>
           </div>
         </div>
       </footer>

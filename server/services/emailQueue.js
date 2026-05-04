@@ -1,33 +1,23 @@
-const Queue = require("bull");
-const Redis = require("ioredis");
 const nodemailer = require("nodemailer");
 const Student = require("../models/Student");
 const User = require("../models/User");
 
-// Create a new Redis client.
-const client = new Redis(process.env.REDIS_URL);
-const subscriber = new Redis(process.env.REDIS_URL);
+// Bull queue disabled - no Redis available
+// Create a mock email queue for testing
 
-const opts = {
-  createClient: function (type) {
-    switch (type) {
-      case "client":
-        return client;
-      case "subscriber":
-        return subscriber;
-      default:
-        return new Redis(process.env.REDIS_URL);
-    }
+const emailQueue = {
+  add: async (data, options) => {
+    console.log("Email task queued (mock):", data);
+    return { id: Math.random().toString(36).substr(2, 9) };
   },
+  process: () => {},
+  on: () => {},
 };
-
-// Create a new Bull queue
-const emailQueue = new Queue("email", opts);
 
 // Create a Nodemailer transporter
 const transporter = nodemailer.createTransport({
-  host: process.env.EMAIL_HOST,
-  port: process.env.EMAIL_PORT,
+  host: process.env.EMAIL_HOST || "localhost",
+  port: process.env.EMAIL_PORT || 587,
   secure: process.env.EMAIL_SECURE === "true",
   auth: {
     user: process.env.EMAIL_USER,

@@ -73,10 +73,12 @@ router.get("/users", async (req, res) => {
     if (role) filter.role = role;
     if (verified !== undefined) filter.isVerified = verified === "true";
     if (search) {
+      // Escape special regex characters to prevent ReDoS attacks
+      const escapedSearch = search.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
       filter.$or = [
-        { email: { $regex: search, $options: "i" } },
-        { "profile.firstName": { $regex: search, $options: "i" } },
-        { "profile.lastName": { $regex: search, $options: "i" } },
+        { email: { $regex: escapedSearch, $options: "i" } },
+        { "profile.firstName": { $regex: escapedSearch, $options: "i" } },
+        { "profile.lastName": { $regex: escapedSearch, $options: "i" } },
       ];
     }
 

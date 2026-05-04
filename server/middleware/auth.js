@@ -107,23 +107,14 @@ const protect = async (req, res, next) => {
             });
           }
 
-          // Create user object with role from DB if available
-          req.user = {
-            _id: payload.sub || payload.uid || payload.user_id,
-            id: payload.sub || payload.uid || payload.user_id,
-            email: payload.email,
-            role: dbUser?.role || payload.role || "student",
-            isActive: true,
-            isVerified: payload.email_verified || false,
-          };
+          // Use the user from database
+          req.user = dbUser.toObject();
+          delete req.user.password;
 
           // Debug logging only in development
           if (process.env.NODE_ENV === "development") {
             console.log(
-              "✅ Firebase token accepted, user:",
-              req.user.email,
-              "role:",
-              req.user.role,
+              `✅ Firebase token accepted, user: ${req.user.email}, role: ${req.user.role}`,
             );
           }
           next();

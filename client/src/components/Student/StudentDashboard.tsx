@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { Link, Navigate } from 'react-router-dom';
-import { analyticsAPI, aiAPI, interviewPrepAPI, referralAPI, videoProfileAPI } from '../../services/api';
+import { analyticsAPI, aiAPI, interviewPrepAPI, referralAPI, videoProfileAPI, codingPlatformsAPI } from '../../services/api';
 import { useAuth } from '../../context/FirebaseAuthContext';
 
 interface StudentDashboardData {
@@ -70,6 +70,50 @@ const StudentDashboard: React.FC = () => {
           }
         } catch (apiErr) {
           console.warn('Dashboard API unavailable, using default data');
+        }
+
+        // Fetch coding platform stats
+        try {
+          const codingRes: any = await codingPlatformsAPI.getMyProfiles();
+          if (codingRes?.success && codingRes?.data?.profiles) {
+            // Update the data with actual coding profiles
+            setData(prevData => {
+              if (!prevData) {
+                return {
+                  placementReadinessScore: 0,
+                  recentApplications: [],
+                  codingPerformance: {
+                    platforms: {
+                      leetcode: codingRes.data.profiles.leetcode?.totalSolved || 0,
+                      codechef: codingRes.data.profiles.codechef?.totalSolved || 0,
+                      codeforces: codingRes.data.profiles.codeforces?.totalSolved || 0
+                    },
+                    totalProblems: 
+                      (codingRes.data.profiles.leetcode?.totalSolved || 0) +
+                      (codingRes.data.profiles.codechef?.totalSolved || 0) +
+                      (codingRes.data.profiles.codeforces?.totalSolved || 0)
+                  }
+                };
+              }
+              return {
+                ...prevData,
+                codingPerformance: {
+                  ...prevData.codingPerformance,
+                  platforms: {
+                    leetcode: codingRes.data.profiles.leetcode?.totalSolved || 0,
+                    codechef: codingRes.data.profiles.codechef?.totalSolved || 0,
+                    codeforces: codingRes.data.profiles.codeforces?.totalSolved || 0
+                  },
+                  totalProblems: 
+                    (codingRes.data.profiles.leetcode?.totalSolved || 0) +
+                    (codingRes.data.profiles.codechef?.totalSolved || 0) +
+                    (codingRes.data.profiles.codeforces?.totalSolved || 0)
+                }
+              };
+            });
+          }
+        } catch (err) {
+          console.warn('Coding profiles unavailable');
         }
         
         // Fetch interview resources
@@ -191,121 +235,201 @@ const StudentDashboard: React.FC = () => {
   }
 
   const displayData = data || {
-    placementReadinessScore: 65,
+    placementReadinessScore: 0,
     recentApplications: [],
     codingPerformance: { totalProblems: 0, averageRating: 0, platforms: { leetcode: 0, codechef: 0, codeforces: 0 } }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-7xl mx-auto">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Welcome, {user?.profile?.firstName || 'Student'}!</h1>
-          <p className="mt-2 text-gray-600">Your personalized career intelligence dashboard</p>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
+      <div className="max-w-7xl mx-auto px-4 py-8">
+        {/* Header Section */}
+        <div className="mb-10">
+          <h1 className="text-4xl font-bold text-slate-900 mb-2">Welcome Back, {user?.profile?.firstName || 'Student'}!</h1>
+          <p className="text-lg text-slate-600">Track your placement journey and career progress</p>
         </div>
 
         {loading && (
-          <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg flex items-center space-x-3">
+          <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-xl flex items-center space-x-3">
             <div className="inline-block animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
-            <p className="text-blue-700 text-sm">Loading your dashboard...</p>
+            <p className="text-blue-700 text-sm font-medium">Fetching your latest data...</p>
           </div>
         )}
 
-        {/* Quick Stats Row */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          <div className="bg-white shadow rounded-lg p-6 border-l-4 border-blue-500">
-            <h3 className="text-sm font-medium text-gray-500">Placement Readiness</h3>
-            <p className="mt-2 text-3xl font-bold text-blue-600">{displayData.placementReadinessScore || 65}%</p>
+        {/* Key Metrics Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-10">
+          {/* Metric Card - Placement Readiness */}
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 hover:shadow-md transition">
+            <div className="flex items-center justify-between mb-4">
+              <div className="p-3 bg-blue-100 rounded-lg">
+                <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+              </div>
+            </div>
+            <p className="text-slate-600 text-sm font-medium mb-1">Placement Readiness</p>
+            <p className="text-3xl font-bold text-slate-900 mb-2">{displayData.placementReadinessScore ?? 0}%</p>
+            <p className="text-xs text-slate-500">Complete your profile to improve</p>
           </div>
-          <div className="bg-white shadow rounded-lg p-6 border-l-4 border-green-500">
-            <h3 className="text-sm font-medium text-gray-500">Placement Probability</h3>
-            <p className="mt-2 text-3xl font-bold text-green-600">{placementProbability !== null ? `${placementProbability}%` : '75%'}</p>
+
+          {/* Metric Card - Probability */}
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 hover:shadow-md transition">
+            <div className="flex items-center justify-between mb-4">
+              <div className="p-3 bg-green-100 rounded-lg">
+                <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+              </div>
+            </div>
+            <p className="text-slate-600 text-sm font-medium mb-1">Placement Probability</p>
+            <p className="text-3xl font-bold text-slate-900 mb-2">{placementProbability !== null ? `${placementProbability}%` : '0%'}</p>
+            <p className="text-xs text-slate-500">AI-calculated prediction</p>
           </div>
-          <div className="bg-white shadow rounded-lg p-6 border-l-4 border-purple-500">
-            <h3 className="text-sm font-medium text-gray-500">Coding Problems</h3>
-            <p className="mt-2 text-3xl font-bold text-purple-600">{displayData.codingPerformance?.totalProblems || 0}</p>
+
+          {/* Metric Card - Coding */}
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 hover:shadow-md transition">
+            <div className="flex items-center justify-between mb-4">
+              <div className="p-3 bg-purple-100 rounded-lg">
+                <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+                </svg>
+              </div>
+            </div>
+            <p className="text-slate-600 text-sm font-medium mb-1">Problems Solved</p>
+            <p className="text-3xl font-bold text-slate-900 mb-2">{displayData.codingPerformance?.totalProblems || 0}</p>
+            <p className="text-xs text-slate-500">Across all platforms</p>
           </div>
-          <div className="bg-white shadow rounded-lg p-6 border-l-4 border-orange-500">
-            <h3 className="text-sm font-medium text-gray-500">Applications</h3>
-            <p className="mt-2 text-3xl font-bold text-orange-600">{displayData.recentApplications?.length || 0}</p>
+
+          {/* Metric Card - Applications */}
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 hover:shadow-md transition">
+            <div className="flex items-center justify-between mb-4">
+              <div className="p-3 bg-orange-100 rounded-lg">
+                <svg className="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+              </div>
+            </div>
+            <p className="text-slate-600 text-sm font-medium mb-1">Applications</p>
+            <p className="text-3xl font-bold text-slate-900 mb-2">{displayData.recentApplications?.length || 0}</p>
+            <p className="text-xs text-slate-500">Active applications</p>
           </div>
         </div>
 
-        {/* AI Features Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-          {/* Career Prediction */}
-          <div className="bg-white shadow rounded-lg p-6">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">🎯 AI Career Prediction</h3>
-              <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">AI Powered</span>
+        {/* Main Content Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-10">
+          {/* Career Prediction Card */}
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-8 lg:col-span-1">
+            <div className="flex items-center mb-6">
+              <div className="w-12 h-12 bg-gradient-to-br from-green-100 to-green-50 rounded-xl flex items-center justify-center mr-4">
+                <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-slate-900">AI Career Prediction</h3>
+                <span className="inline-block text-xs font-semibold text-green-700 bg-green-50 px-2 py-1 rounded-full mt-1">AI Powered</span>
+              </div>
             </div>
-            <p className="text-gray-600 text-sm mb-4">Get personalized placement probability based on your profile, skills, and coding performance.</p>
+            <p className="text-slate-600 text-sm mb-6">Get personalized placement probability based on your profile analysis and performance metrics.</p>
             <button
-              className="w-full bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition disabled:opacity-50"
               onClick={handlePredictPlacement}
               disabled={probabilityLoading}
+              className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-4 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {probabilityLoading ? 'Analyzing...' : 'Update Prediction'}
+              {probabilityLoading ? 'Analyzing Your Profile...' : 'Generate Prediction'}
             </button>
           </div>
 
-          {/* Skill Gap Analysis */}
-          <div className="bg-white shadow rounded-lg p-6">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">📊 Skill Gap Analyzer</h3>
-              <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">AI Powered</span>
+          {/* Skill Gap Analyzer Card */}
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-8 lg:col-span-1">
+            <div className="flex items-center mb-6">
+              <div className="w-12 h-12 bg-gradient-to-br from-blue-100 to-blue-50 rounded-xl flex items-center justify-center mr-4">
+                <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-slate-900">Skill Gap Analyzer</h3>
+                <span className="inline-block text-xs font-semibold text-blue-700 bg-blue-50 px-2 py-1 rounded-full mt-1">AI Powered</span>
+              </div>
             </div>
-            <p className="text-gray-600 text-sm mb-4">Identify gaps between your skills and target role requirements.</p>
+            <p className="text-slate-600 text-sm mb-4">Identify skill gaps for your target role.</p>
             <div className="flex space-x-2 mb-4">
               <input
                 type="text"
                 value={skillGapTarget}
                 onChange={(e) => setSkillGapTarget(e.target.value)}
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
-                placeholder="Target role (e.g. Backend Developer)"
+                className="flex-1 px-4 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="e.g., Backend Developer"
               />
               <button
-                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition disabled:opacity-50"
                 onClick={handleAnalyzeSkillGap}
                 disabled={skillGapLoading}
+                className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded-lg transition disabled:opacity-50"
               >
                 {skillGapLoading ? '...' : 'Analyze'}
               </button>
             </div>
             {skillGapSuggestions && (
-              <div className="text-sm text-gray-700 bg-gray-50 p-3 rounded">
-                <p className="font-medium mb-1">Recommendations:</p>
-                <ul className="list-disc list-inside space-y-1">
+              <div className="text-sm bg-blue-50 border border-blue-200 p-4 rounded-lg">
+                <p className="font-semibold text-slate-900 mb-2">Recommendations:</p>
+                <ul className="space-y-1 text-slate-700">
                   {skillGapSuggestions.recommendations?.slice(0, 3).map((rec: string, idx: number) => (
-                    <li key={idx}>{rec}</li>
+                    <li key={idx} className="flex items-start">
+                      <span className="text-blue-600 mr-2">•</span>
+                      <span>{rec}</span>
+                    </li>
                   ))}
                 </ul>
               </div>
             )}
           </div>
+
+          {/* Coding Performance Card */}
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-8 lg:col-span-1">
+            <div className="flex items-center mb-6">
+              <div className="w-12 h-12 bg-gradient-to-br from-purple-100 to-purple-50 rounded-xl flex items-center justify-center mr-4">
+                <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-slate-900">Coding Performance</h3>
+                <span className="inline-block text-xs font-semibold text-purple-700 bg-purple-50 px-2 py-1 rounded-full mt-1">Real-time</span>
+              </div>
+            </div>
+            <div className="space-y-4">
+              <div className="flex justify-between items-center p-3 bg-slate-50 rounded-lg">
+                <span className="text-slate-600 font-medium">LeetCode</span>
+                <span className="text-lg font-bold text-slate-900">{displayData.codingPerformance?.platforms?.leetcode || 0}</span>
+              </div>
+              <div className="flex justify-between items-center p-3 bg-slate-50 rounded-lg">
+                <span className="text-slate-600 font-medium">CodeChef</span>
+                <span className="text-lg font-bold text-slate-900">{displayData.codingPerformance?.platforms?.codechef || 0}</span>
+              </div>
+              <div className="flex justify-between items-center p-3 bg-slate-50 rounded-lg">
+                <span className="text-slate-600 font-medium">Codeforces</span>
+                <span className="text-lg font-bold text-slate-900">{displayData.codingPerformance?.platforms?.codeforces || 0}</span>
+              </div>
+            </div>
+          </div>
         </div>
 
-        {/* Interview Preparation */}
-        <div className="bg-white shadow rounded-lg p-6 mb-8">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-semibold text-gray-900">🎤 Interview Preparation</h3>
-            <span className="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded">Pro Feature</span>
-          </div>
-          
-          <div className="flex space-x-2 mb-4">
-            {['startup', 'faang', 'service'].map((type) => (
-              <button
-                key={type}
-                onClick={() => setSelectedInterviewType(type)}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
-                  selectedInterviewType === type
-                    ? 'bg-purple-600 text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                {type.toUpperCase()}
-              </button>
-            ))}
+        {/* Interview Preparation Section */}
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-8 mb-10">
+          <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center">
+              <div className="w-12 h-12 bg-gradient-to-br from-indigo-100 to-indigo-50 rounded-xl flex items-center justify-center mr-4">
+                <svg className="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-slate-900">Interview Preparation</h3>
+                <p className="text-sm text-slate-500 mt-1">Master interview patterns and techniques</p>
+              </div>
+            </div>
+            <span className="text-xs font-semibold text-indigo-700 bg-indigo-50 px-3 py-1 rounded-full">Pro Feature</span>
           </div>
           
           {interviewResources?.codingPatterns && (
@@ -379,6 +503,8 @@ const StudentDashboard: React.FC = () => {
                     type="text"
                     value={referralCode}
                     readOnly
+                    placeholder="Your referral code"
+                    title="Referral code for sharing with friends"
                     className="flex-1 px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-900 font-mono"
                   />
                   <button

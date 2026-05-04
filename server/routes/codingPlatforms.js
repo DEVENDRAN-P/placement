@@ -9,6 +9,34 @@ const router = express.Router();
 // All routes require authentication
 router.use(protect);
 
+// Get student's saved coding profiles
+router.get("/my-profiles", authorize("student"), async (req, res) => {
+  try {
+    const student = await Student.findOne({ user: req.user._id });
+
+    if (!student) {
+      return res.status(404).json({
+        success: false,
+        message: "Student profile not found",
+      });
+    }
+
+    res.json({
+      success: true,
+      data: {
+        profiles: student.codingProfiles || {},
+      },
+    });
+  } catch (error) {
+    console.error("Get coding profiles error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch coding profiles",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
+  }
+});
+
 // Fetch coding stats from all platforms for a student
 router.post("/fetch-all-stats", authorize("student"), async (req, res) => {
   try {

@@ -30,8 +30,19 @@ const upload = multer({
   },
   fileFilter: function (req, file, cb) {
     const allowedTypes = [".mp4", ".webm", ".mov", ".avi"];
+    const allowedMimeTypes = [
+      "video/mp4",
+      "video/webm",
+      "video/quicktime",
+      "video/x-msvideo",
+    ];
     const ext = path.extname(file.originalname).toLowerCase();
-    if (allowedTypes.includes(ext)) {
+
+    // Check both extension and MIME type
+    if (
+      allowedTypes.includes(ext) &&
+      allowedMimeTypes.includes(file.mimetype)
+    ) {
       cb(null, true);
     } else {
       cb(new Error("Only video files (MP4, WebM, MOV, AVI) are allowed"));
@@ -67,7 +78,11 @@ router.post(
 
       // Remove old video if exists
       if (student.videoProfile?.videoUrl) {
-        const oldPath = path.join(__dirname, "..", student.videoProfile.videoUrl);
+        const oldPath = path.join(
+          __dirname,
+          "..",
+          student.videoProfile.videoUrl,
+        );
         if (fs.existsSync(oldPath)) {
           fs.unlinkSync(oldPath);
         }
@@ -97,7 +112,7 @@ router.post(
         message: "Failed to upload video",
       });
     }
-  }
+  },
 );
 
 // Get video profile status
@@ -131,47 +146,53 @@ router.get("/video-status", authorize("student"), async (req, res) => {
 });
 
 // Delete video profile
-router.delete("/delete-introduction", authorize("student"), async (req, res) => {
-  try {
-    const student = await Student.findOne({ user: req.user._id });
+router.delete(
+  "/delete-introduction",
+  authorize("student"),
+  async (req, res) => {
+    try {
+      const student = await Student.findOne({ user: req.user._id });
 
-    if (!student) {
-      return res.status(404).json({
-        success: false,
-        message: "Student profile not found",
-      });
-    }
-
-    if (student.videoProfile?.videoUrl) {
-      const videoPath = path.join(__dirname, "..", student.videoProfile.videoUrl);
-      if (fs.existsSync(videoPath)) {
-        fs.unlinkSync(videoPath);
+      if (!student) {
+        return res.status(404).json({
+          success: false,
+          message: "Student profile not found",
+        });
       }
 
-      student.videoProfile = undefined;
-      await student.save();
-    }
+      if (student.videoProfile?.videoUrl) {
+        const videoPath = path.join(
+          __dirname,
+          "..",
+          student.videoProfile.videoUrl,
+        );
+        if (fs.existsSync(videoPath)) {
+          fs.unlinkSync(videoPath);
+        }
 
-    res.json({
-      success: true,
-      message: "Video introduction deleted successfully",
-    });
-  } catch (error) {
-    console.error("Delete video error:", error);
-    res.status(500).json({
-      success: false,
-      message: "Failed to delete video",
-    });
-  }
-});
+        student.videoProfile = undefined;
+        await student.save();
+      }
+
+      res.json({
+        success: true,
+        message: "Video introduction deleted successfully",
+      });
+    } catch (error) {
+      console.error("Delete video error:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to delete video",
+      });
+    }
+  },
+);
 
 // Generate blockchain credential (placeholder - for future implementation)
 router.post(
   "/generate-credential",
   authorize("student"),
-  [
-    body("credentialType").isIn(["degree", "certificate", "skill_badge"]),
-  ],
+  [body("credentialType").isIn(["degree", "certificate", "skill_badge"])],
   async (req, res) => {
     try {
       const errors = validationResult(req);
@@ -184,7 +205,10 @@ router.post(
       }
 
       const { credentialType } = req.body;
-      const student = await Student.findOne({ user: req.user._id }).populate("college", "name code");
+      const student = await Student.findOne({ user: req.user._id }).populate(
+        "college",
+        "name code",
+      );
 
       if (!student) {
         return res.status(404).json({
@@ -207,12 +231,16 @@ router.post(
         credentialType,
         issuedAt: new Date(),
         status: "issued",
-        verificationHash: `0x${Buffer.from(JSON.stringify({
-          student: student._id,
-          college: student.college?._id,
-          type: credentialType,
-          timestamp: Date.now()
-        })).toString("hex").substring(0, 64)}`,
+        verificationHash: `0x${Buffer.from(
+          JSON.stringify({
+            student: student._id,
+            college: student.college?._id,
+            type: credentialType,
+            timestamp: Date.now(),
+          }),
+        )
+          .toString("hex")
+          .substring(0, 64)}`,
       });
 
       await student.save();
@@ -236,7 +264,7 @@ router.post(
         message: "Failed to generate credential",
       });
     }
-  }
+  },
 );
 
 // Verify a credential
@@ -256,7 +284,7 @@ router.get("/verify-credential/:credentialId", async (req, res) => {
     }
 
     const credential = student.blockchainCredentials.find(
-      (c) => c.credentialId === credentialId
+      (c) => c.credentialId === credentialId,
     );
 
     res.json({
@@ -295,7 +323,8 @@ router.get("/my-credentials", authorize("student"), async (req, res) => {
     res.json({
       success: true,
       data: student.blockchainCredentials.sort(
-        (a, b) => new Date(b.issuedAt).getTime() - new Date(a.issuedAt).getTime()
+        (a, b) =>
+          new Date(b.issuedAt).getTime() - new Date(a.issuedAt).getTime(),
       ),
     });
   } catch (error) {
@@ -331,7 +360,7 @@ router.post(
       }
 
       const credential = student.blockchainCredentials?.find(
-        (c) => c.credentialId === credentialId
+        (c) => c.credentialId === credentialId,
       );
 
       if (!credential) {
@@ -360,7 +389,7 @@ router.post(
         message: "Failed to verify credential",
       });
     }
-  }
+  },
 );
 
 module.exports = router;

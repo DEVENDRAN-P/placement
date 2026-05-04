@@ -20,6 +20,9 @@ const Register: React.FC = () => {
     collegeCode: '',
     companyName: '',
     companyIndustry: '',
+    leetcodeUsername: '',
+    codechefUsername: '',
+    codeforcesUsername: '',
   });
   const [showPassword, setShowPassword] = useState(false);
 
@@ -86,6 +89,11 @@ const Register: React.FC = () => {
         companyDetails: formData.role === 'recruiter' ? {
           name: formData.companyName,
           industry: formData.companyIndustry,
+        } : undefined,
+        codingProfiles: formData.role === 'student' ? {
+          leetcode: formData.leetcodeUsername ? { username: formData.leetcodeUsername } : undefined,
+          codechef: formData.codechefUsername ? { username: formData.codechefUsername } : undefined,
+          codeforces: formData.codeforcesUsername ? { username: formData.codeforcesUsername } : undefined,
         } : undefined,
       });
 
@@ -310,7 +318,46 @@ const Register: React.FC = () => {
                       />
                     </div>
 
-                    {formData.role === 'college' && (
+                     {formData.role === 'student' && (
+                       <>
+                         <div>
+                           <label className="block text-sm font-medium text-gray-700 mb-1">LeetCode Username (Optional)</label>
+                           <input
+                             type="text"
+                             name="leetcodeUsername"
+                             value={formData.leetcodeUsername}
+                             onChange={handleInputChange}
+                             placeholder="your-leetcode-username"
+                             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                           />
+                           <p className="mt-1 text-xs text-gray-500">We'll fetch your coding stats automatically</p>
+                         </div>
+                         <div>
+                           <label className="block text-sm font-medium text-gray-700 mb-1">CodeChef Username (Optional)</label>
+                           <input
+                             type="text"
+                             name="codechefUsername"
+                             value={formData.codechefUsername}
+                             onChange={handleInputChange}
+                             placeholder="your-codechef-username"
+                             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                           />
+                         </div>
+                         <div>
+                           <label className="block text-sm font-medium text-gray-700 mb-1">Codeforces Username (Optional)</label>
+                           <input
+                             type="text"
+                             name="codeforcesUsername"
+                             value={formData.codeforcesUsername}
+                             onChange={handleInputChange}
+                             placeholder="your-codeforces-handle"
+                             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                           />
+                         </div>
+                       </>
+                     )}
+
+                     {formData.role === 'college' && (
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">College Code</label>
                         <input

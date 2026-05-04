@@ -28,8 +28,18 @@ const upload = multer({
   },
   fileFilter: function (req, file, cb) {
     const allowedTypes = [".pdf", ".doc", ".docx"];
+    const allowedMimeTypes = [
+      "application/pdf",
+      "application/msword",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    ];
     const ext = path.extname(file.originalname).toLowerCase();
-    if (allowedTypes.includes(ext)) {
+
+    // Check both extension and MIME type
+    if (
+      allowedTypes.includes(ext) &&
+      allowedMimeTypes.includes(file.mimetype)
+    ) {
       cb(null, true);
     } else {
       cb(new Error("Only PDF, DOC, and DOCX files are allowed"));

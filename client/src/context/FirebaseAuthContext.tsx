@@ -28,6 +28,11 @@ interface AuthContextType {
     role: 'student' | 'college' | 'recruiter';
     collegeCode?: string;
     companyDetails?: any;
+    codingProfiles?: {
+      leetcode?: { username: string };
+      codechef?: { username: string };
+      codeforces?: { username: string };
+    };
   }) => Promise<void>;
   logout: () => Promise<void>;
   updateProfile: (profileData: any) => void;
@@ -175,7 +180,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     return () => unsubscribe();
   }, [createUserFromFirebase]);
 
-  const login = async (email: string, password: string) => {
+   const login = async (email: string, password: string) => {
     try {
       setIsLoading(true);
       console.log('🔐 Attempting login for:', email);
@@ -259,15 +264,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  const register = async (userData: {
-    email: string;
-    password: string;
-    firstName: string;
-    lastName: string;
-    role: 'student' | 'college' | 'recruiter';
-    collegeCode?: string;
-    companyDetails?: any;
-  }) => {
+   const register = async (userData: {
+     email: string;
+     password: string;
+     firstName: string;
+     lastName: string;
+     role: 'student' | 'college' | 'recruiter';
+     collegeCode?: string;
+     companyDetails?: any;
+     codingProfiles?: {
+       leetcode?: { username: string };
+       codechef?: { username: string };
+       codeforces?: { username: string };
+     };
+   }) => {
     try {
       setIsLoading(true);
       console.log('🔐 Registering user:', userData.email, 'as', userData.role);
@@ -368,15 +378,22 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       // Sync with backend MongoDB to create user record and get JWT token
       try {
+        const backendPayload: any = {
+          email: fbUser.email,
+          firstName: userData.firstName,
+          lastName: userData.lastName,
+          photoURL: fbUser.photoURL,
+          role: userData.role,
+        };
+        
+        // Add coding profiles if provided (for students)
+        if (userData.codingProfiles) {
+          backendPayload.codingProfiles = userData.codingProfiles;
+        }
+
         const response = await axios.post(
           `${process.env.REACT_APP_API_URL}/auth/firebase-login`,
-          {
-            email: fbUser.email,
-            firstName: userData.firstName,
-            lastName: userData.lastName,
-            photoURL: fbUser.photoURL,
-            role: userData.role,
-          }
+          backendPayload
         );
 
         if (response.data.success) {

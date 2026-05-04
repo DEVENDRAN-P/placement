@@ -128,22 +128,40 @@ class CodingPlatformService {
         `https://codeforces.com/api/user.info?handles=${username}`,
       );
 
-      if (response.data.status !== "OK" || response.data.result.length === 0) {
-        throw new Error("User not found");
+      // Add proper null/undefined checks
+      if (
+        !response.data ||
+        response.data.status !== "OK" ||
+        !response.data.result ||
+        response.data.result.length === 0
+      ) {
+        throw new Error("User not found or invalid response");
       }
 
       const userInfo = response.data.result[0];
+
+      if (!userInfo) {
+        throw new Error("Invalid user data");
+      }
 
       // Get user submissions to count solved problems
       const submissionsResponse = await axios.get(
         `https://codeforces.com/api/user.status?handle=${username}&count=1000`,
       );
-      const submissions = submissionsResponse.data.result;
+
+      if (
+        !submissionsResponse.data ||
+        submissionsResponse.data.status !== "OK"
+      ) {
+        throw new Error("Failed to fetch submissions");
+      }
+
+      const submissions = submissionsResponse.data.result || [];
 
       // Count unique problems solved
       const solvedProblems = new Set();
       submissions.forEach((submission) => {
-        if (submission.verdict === "OK") {
+        if (submission && submission.verdict === "OK" && submission.problem) {
           solvedProblems.add(
             `${submission.problem.contestId}${submission.problem.index}`,
           );

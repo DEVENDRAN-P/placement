@@ -7,11 +7,13 @@ import Dashboard from './components/Dashboard/Dashboard';
 import StudentDashboard from './components/Student/StudentDashboard';
 import CollegeDashboard from './components/College/CollegeDashboard';
 import RecruiterDashboard from './components/Recruiter/RecruiterDashboard';
+import RecruiterPage from './components/Recruiter/RecruiterPage';
 import Layout from './components/Layout/Layout';
 import Login from './components/Auth/Login';
 import Register from './components/Auth/Register';
 import StudentProfile from './components/Student/StudentProfile';
 import EnhancedStudentProfile from './components/Student/EnhancedStudentProfile';
+import CodingProfilesLinker from './components/Student/CodingProfilesLinker';
 import AIShortlisting from './components/Recruiter/AIShortlisting';
 import CollegeVerification from './components/College/CollegeVerification';
 import PlacementAnalytics from './components/College/PlacementAnalytics';
@@ -24,6 +26,8 @@ import InterviewPrep from './components/Student/InterviewPrep';
 import ReferralDashboard from './components/Student/ReferralDashboard';
 import VideoProfileUpload from './components/Student/VideoProfileUpload';
 import AdminDashboard from './components/Admin/AdminDashboard';
+import Contact from './components/Contact';
+import FAQ from './components/FAQ';
 
 // Protected Route Component
 interface ProtectedRouteProps {
@@ -165,6 +169,14 @@ function AppContent() {
             }
           />
           <Route
+            path="student/coding-profiles"
+            element={
+              <ProtectedRoute requiredRole="student">
+                <CodingProfilesLinker />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="admin"
             element={
               <ProtectedRoute requiredRole="admin">
@@ -212,6 +224,14 @@ function AppContent() {
             path="recruiter"
             element={
               <ProtectedRoute requiredRole="recruiter">
+                <RecruiterPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="recruiter/dashboard"
+            element={
+              <ProtectedRoute requiredRole="recruiter">
                 <RecruiterDashboard />
               </ProtectedRoute>
             }
@@ -232,6 +252,10 @@ function AppContent() {
               </ProtectedRoute>
             }
           />
+
+          {/* Public Routes */}
+          <Route path="contact" element={<Contact />} />
+          <Route path="faq" element={<FAQ />} />
 
           {/* Public Student Profile - Accessible to recruiters */}
           <Route

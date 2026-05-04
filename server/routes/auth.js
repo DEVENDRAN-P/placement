@@ -1,14 +1,181 @@
 const express = require("express");
 const jwt = require("jsonwebtoken");
 const { body, validationResult } = require("express-validator");
+const rateLimit = require("express-rate-limit");
 const User = require("../models/User");
 const Student = require("../models/Student");
 const College = require("../models/College");
 const Recruiter = require("../models/Recruiter");
 const { protect } = require("../middleware/auth");
+const { CodingPlatformService } = require("../services/codingPlatforms");
 const nodemailer = require("nodemailer");
 
 const router = express.Router();
+
+// Rate limiting for authentication endpoints
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // Limit each IP to 5 attempts per windowMs
+  standardHeaders: true,
+  legacyHeaders: false,
+  message:
+    "Too many login/register attempts, please try again after 15 minutes",
+  skipSuccessfulRequests: false,
+});
+
+// Helper function to get or create default college
+const getOrCreateDefaultCollege = async (userId) => {
+  let college = await College.findOne();
+  if (!college) {
+    try {
+      college = new College({
+        user: userId,
+        name: "Default College",
+        code: "DEFAULT",
+        type: "Private",
+        address: { city: "Unknown", state: "Unknown" },
+        contact: { email: "contact@default.edu" },
+        statistics: {
+          totalStudents: 0,
+          placedStudents: 0,
+          averagePackage: 0,
+          highestPackage: 0,
+          companiesVisited: 0,
+          placementRate: 0,
+        },
+        placementCell: {},
+        verificationStatus: { isVerified: false, documents: [] },
+        subscription: { plan: "Basic", isActive: false },
+      });
+      await college.save();
+    } catch (error) {
+      // Handle race condition: if another process created the college concurrently
+      if (error.code === 11000 || error.code === "E11000") {
+        college = await College.findOne();
+      } else {
+        throw error;
+      }
+    }
+  }
+  return college;
+};
+
+// Helper function to create student profile with coding data
+const createStudentProfile = async (userId, codingProfilesInput = {}) => {
+  const college = await getOrCreateDefaultCollege(userId);
+
+  // Prepare coding profiles with defaults
+  const codingProfilesData = {
+    leetcode: {
+      username: "",
+      totalSolved: 0,
+      easySolved: 0,
+      mediumSolved: 0,
+      hardSolved: 0,
+      rating: 0,
+      lastUpdated: new Date(),
+    },
+    codechef: {
+      username: "",
+      rating: 0,
+      stars: "",
+      totalSolved: 0,
+      lastUpdated: new Date(),
+    },
+    codeforces: {
+      username: "",
+      rating: 0,
+      rank: "Newbie",
+      totalSolved: 0,
+      lastUpdated: new Date(),
+    },
+  };
+
+  // Fetch stats if usernames provided
+  const platforms = ["leetcode", "codechef", "codeforces"];
+  for (const platform of platforms) {
+    const inputData = codingProfilesInput[platform];
+    if (inputData && inputData.username) {
+      try {
+        const stats = await CodingPlatformService.fetchCodingStats(
+          platform,
+          inputData.username,
+        );
+        if (platform === "leetcode") {
+          codingProfilesData.leetcode = {
+            username: stats.username,
+            totalSolved: stats.totalSolved || 0,
+            easySolved: stats.easySolved || 0,
+            mediumSolved: stats.mediumSolved || 0,
+            hardSolved: stats.hardSolved || 0,
+            rating: stats.rating || 0,
+            lastUpdated: new Date(),
+          };
+        } else if (platform === "codechef") {
+          codingProfilesData.codechef = {
+            username: stats.username,
+            rating: stats.rating || 0,
+            stars: stats.stars || "",
+            totalSolved: stats.totalSolved || 0,
+            lastUpdated: new Date(),
+          };
+        } else if (platform === "codeforces") {
+          codingProfilesData.codeforces = {
+            username: stats.username,
+            rating: stats.rating || 0,
+            rank: stats.rank || "Newbie",
+            totalSolved: stats.totalSolved || 0,
+            lastUpdated: new Date(),
+          };
+        }
+      } catch (error) {
+        console.error(
+          `Failed to fetch ${platform} stats during signup:`,
+          error.message,
+        );
+      }
+    }
+  }
+
+  const student = new Student({
+    user: userId,
+    college: college._id,
+    codingProfiles: codingProfilesData,
+    academicInfo: {
+      rollNumber: userId.toString(),
+      department: "Computer Science",
+      year: 1,
+      semester: 1,
+      cgpa: 0,
+      attendance: 0,
+      backlogCount: 0,
+    },
+    skills: [],
+    projects: [],
+    certifications: [],
+    achievements: [],
+    socialLinks: {},
+    resume: {
+      fileUrl: "",
+      fileName: "",
+      uploadDate: new Date(),
+      isVerified: false,
+      plagiarismScore: 0,
+    },
+    placementStatus: { isPlaced: false },
+    aiInsights: {
+      placementProbability: 0,
+      recommendedSkills: [],
+      skillGapAnalysis: "",
+      careerAdvice: "",
+      lastAnalyzed: new Date(),
+    },
+    blockchainCredentials: [],
+  });
+
+  await student.save();
+  return student;
+};
 
 // Generate JWT Token (now includes role)
 const generateToken = (id, role = "student") => {
@@ -51,6 +218,7 @@ const sendVerificationEmail = async (user, token) => {
 // Register user
 router.post(
   "/register",
+  authLimiter,
   [
     body("email").isEmail().normalizeEmail(),
     body("password").isLength({ min: 6 }),
@@ -78,6 +246,7 @@ router.post(
         phone,
         collegeCode,
         companyDetails,
+        codingProfiles,
       } = req.body;
 
       // Check if user already exists
@@ -108,17 +277,25 @@ router.post(
 
       // Create role-specific profile
       if (role === "student") {
-        // For students, we'll need additional information
-        // This will be handled in a separate profile completion step
-        console.log(
-          "Student registration initiated, profile completion required",
-        );
+        // Create student profile with optional coding platform data
+        await createStudentProfile(user._id, codingProfiles);
       } else if (role === "college") {
         if (!collegeCode) {
           await User.findByIdAndDelete(user._id);
           return res.status(400).json({
             success: false,
             message: "College code is required for college registration",
+          });
+        }
+
+        // Check if college code already exists
+        const existingCollege = await College.findOne({ code: collegeCode });
+        if (existingCollege) {
+          await User.findByIdAndDelete(user._id);
+          return res.status(400).json({
+            success: false,
+            message:
+              "College code already registered. Please use a unique code.",
           });
         }
 
@@ -231,6 +408,7 @@ router.post("/verify-email/:token", async (req, res) => {
 // Login
 router.post(
   "/login",
+  authLimiter,
   [body("email").isEmail().normalizeEmail(), body("password").notEmpty()],
   async (req, res) => {
     try {
@@ -379,6 +557,7 @@ router.post(
         role = "student",
         photoURL,
         phone,
+        codingProfiles,
       } = req.body;
 
       let user = await User.findOne({ email });
@@ -403,8 +582,7 @@ router.post(
 
         // Create role-specific profile
         if (role === "student") {
-          // Empty student profile will be completed later
-          console.log("Firebase student registration initiated");
+          await createStudentProfile(user._id, codingProfiles);
         } else if (role === "college") {
           const college = new College({
             user: user._id,
@@ -436,6 +614,66 @@ router.post(
         user.isVerified = true;
         user.lastLogin = new Date();
         await user.save();
+
+        // Ensure student profile exists for existing student users (first-time login after Firebase registration)
+        if (user.role === "student") {
+          let student = await Student.findOne({ user: user._id });
+          if (!student) {
+            // Create missing student profile with provided coding data (if any)
+            await createStudentProfile(user._id, codingProfiles);
+          } else if (codingProfiles) {
+            // Update only missing coding profiles (e.g., if user didn't provide during initial signup later login)
+            const platforms = ["leetcode", "codechef", "codeforces"];
+            let needsUpdate = false;
+            const updateData = {};
+
+            for (const platform of platforms) {
+              const input = codingProfiles[platform];
+              if (
+                input &&
+                input.username &&
+                !student.codingProfiles[platform]?.username
+              ) {
+                try {
+                  const stats = await CodingPlatformService.fetchCodingStats(
+                    platform,
+                    input.username,
+                  );
+                  updateData[`codingProfiles.${platform}`] = {
+                    username: stats.username,
+                    totalSolved: stats.totalSolved || 0,
+                    ...(platform === "leetcode" && {
+                      easySolved: stats.easySolved || 0,
+                      mediumSolved: stats.mediumSolved || 0,
+                      hardSolved: stats.hardSolved || 0,
+                    }),
+                    ...(platform === "codechef" && {
+                      stars: stats.stars || "",
+                    }),
+                    ...(platform === "codeforces" && {
+                      rank: stats.rank || "Newbie",
+                    }),
+                    rating: stats.rating || 0,
+                    lastUpdated: new Date(),
+                  };
+                  needsUpdate = true;
+                } catch (error) {
+                  console.error(
+                    `Failed to fetch ${platform} stats:`,
+                    error.message,
+                  );
+                }
+              }
+            }
+
+            if (needsUpdate) {
+              await Student.findOneAndUpdate(
+                { user: user._id },
+                { $set: updateData },
+              );
+            }
+          }
+        }
       }
 
       // Update last login
