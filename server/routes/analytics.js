@@ -15,44 +15,44 @@ router.get("/college/dashboard", authorize("college"), async (req, res) => {
   try {
     const college = await College.findOne({ user: req.user._id });
 
-    if (!college) {
-      console.log(
-        "🏫 College profile not found in MongoDB, returning default data for Firebase user",
-      );
-      return res.json({
-        success: true,
-        data: {
-          basicStatistics: {
-            totalStudents: 0,
-            placedStudents: 0,
-            placementRate: 0,
-          },
-          departmentStats: {},
-          cgpaDistribution: {
-            "9.0-10.0": 0,
-            "8.0-9.0": 0,
-            "7.0-8.0": 0,
-            "6.0-7.0": 0,
-            "Below 6.0": 0,
-          },
-          codingStats: {
-            totalActiveCoders: 0,
-            averageRating: 0,
-            totalProblemsSolved: 0,
-            platformDistribution: {
-              leetcode: 0,
-              codechef: 0,
-              codeforces: 0,
-            },
-          },
-          recentPlacements: [],
-          monthlyTrend: {},
-          topCompanies: [],
-          skillDemand: [],
-          message: "Complete your college profile to see detailed analytics",
-        },
-      });
-    }
+     if (!college) {
+       console.log(
+         "🏫 College profile not found in MongoDB, returning default data for Firebase user",
+       );
+       return res.json({
+         success: true,
+         data: {
+           overview: {
+             totalStudents: 0,
+             placedStudents: 0,
+             placementRate: 0,
+             averagePackage: 0,
+             highestPackage: 0,
+             companiesVisited: 0,
+           },
+           departmentStats: {},
+           cgpaDistribution: {
+             "9.0-10.0": 0,
+             "8.0-9.0": 0,
+             "7.0-8.0": 0,
+             "6.0-7.0": 0,
+             "Below 6.0": 0,
+           },
+           codingStats: {
+             totalActiveCoders: 0,
+             averageRating: 0,
+             totalProblemsSolved: 0,
+             platformDistribution: {
+               leetcode: 0,
+               codechef: 0,
+               codeforces: 0,
+             },
+           },
+           monthlyTrend: {},
+           recentPlacements: [],
+         },
+       });
+     }
 
     // Get basic statistics
     const students = await Student.find({ college: college._id });
@@ -160,61 +160,61 @@ router.get("/college/dashboard", authorize("college"), async (req, res) => {
 
     codingStats.averageRating = ratingCount > 0 ? totalRating / ratingCount : 0;
 
-    // Recent placements trend
-    const recentPlacements = await Placement.find({
-      college: college._id,
-      status: "Closed",
-      "process.endDate": {
-        $gte: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000),
-      }, // Last 90 days
-    }).populate("company", "company.name");
+     // Recent placements trend
+     const recentPlacements = await Placement.find({
+       college: college._id,
+       status: "Closed",
+       "process.endDate": {
+         $gte: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000),
+       }, // Last 90 days
+     }).populate("company", "company.name");
 
-    const monthlyTrend = {};
-    recentPlacements.forEach((placement) => {
-      const month = placement.process.endDate.toISOString().slice(0, 7);
-      if (!monthlyTrend[month]) {
-        monthlyTrend[month] = {
-          companies: new Set(),
-          placements: 0,
-          students: 0,
-        };
-      }
-      monthlyTrend[month].companies.add(placement.company.company.name);
-      monthlyTrend[month].placements++;
-      monthlyTrend[month].students += placement.applications.filter(
-        (app) => app.finalStatus === "Selected",
-      ).length;
-    });
+     const monthlyTrend = {};
+     recentPlacements.forEach((placement) => {
+       const month = placement.process.endDate.toISOString().slice(0, 7);
+       if (!monthlyTrend[month]) {
+         monthlyTrend[month] = {
+           companies: new Set(),
+           placements: 0,
+           students: 0,
+         };
+       }
+       monthlyTrend[month].companies.add(placement.company.company.name);
+       monthlyTrend[month].placements++;
+       monthlyTrend[month].students += placement.applications.filter(
+         (app) => app.finalStatus === "Selected",
+       ).length;
+     });
 
-    // Convert Sets to counts
-    Object.keys(monthlyTrend).forEach((month) => {
-      monthlyTrend[month].companies = monthlyTrend[month].companies.size;
-    });
+     // Convert Sets to counts
+     Object.keys(monthlyTrend).forEach((month) => {
+       monthlyTrend[month].companies = monthlyTrend[month].companies.size;
+     });
 
-    res.json({
-      success: true,
-      data: {
-        overview: {
-          totalStudents,
-          placedStudents,
-          placementRate: Math.round(placementRate * 10) / 10,
-          averagePackage: college.statistics.averagePackage,
-          highestPackage: college.statistics.highestPackage,
-          companiesVisited: college.statistics.companiesVisited,
-        },
-        departmentStats,
-        cgpaDistribution,
-        codingStats,
-        monthlyTrend,
-        recentPlacements: recentPlacements.slice(0, 5).map((p) => ({
-          company: p.company.company.name,
-          role: p.job.title,
-          studentsSelected: p.applications.filter(
-            (app) => app.finalStatus === "Selected",
-          ).length,
-        })),
-      },
-    });
+     res.json({
+       success: true,
+       data: {
+         overview: {
+           totalStudents,
+           placedStudents,
+           placementRate: Math.round(placementRate * 10) / 10,
+           averagePackage: college.statistics?.averagePackage || 0,
+           highestPackage: college.statistics?.highestPackage || 0,
+           companiesVisited: college.statistics?.companiesVisited || 0,
+         },
+         departmentStats,
+         cgpaDistribution,
+         codingStats,
+         monthlyTrend,
+         recentPlacements: recentPlacements.slice(0, 5).map((p) => ({
+           company: p.company.company.name,
+           role: p.job.title,
+           studentsSelected: p.applications.filter(
+             (app) => app.finalStatus === "Selected",
+           ).length,
+         })),
+       },
+     });
   } catch (error) {
     console.error("College dashboard analytics error:", error);
     res.status(500).json({
