@@ -54,23 +54,12 @@ app.use(helmet());
 app.use("/api/", apiLimiter);
 
 // CORS configuration
-const allowedOrigins = [
-  "http://localhost:3000",
-  "http://localhost:3001",
-  "http://127.0.0.1:3000",
-  "http://127.0.0.1:3001",
-  process.env.FRONTEND_URL,
-].filter(Boolean);
 
+
+// CORS configuration (FIXED)
 app.use(
   cors({
-    origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error("Not allowed by CORS"));
-      }
-    },
+    origin: true, // allow all origins (fixes 403 on Vercel)
     credentials: true,
   }),
 );
@@ -102,18 +91,21 @@ if (process.env.NODE_ENV !== "test") {
     console.error("MongoDB connection error:", err.message);
   });
 
-  mongoose
-    .connect(
-      process.env.MONGODB_URI || "mongodb://localhost:27017/career_intelligence",
-      mongoOptions,
-    )
-    .catch((err) => {
-      console.error("MongoDB initial connection failed:", err.message);
-    });
+ if (!process.env.MONGODB_URI) {
+  console.error("❌ MONGODB_URI is missing");
+  process.exit(1);
+}
+
+mongoose.connect(process.env.MONGODB_URI, mongoOptions)
+  .then(() => console.log("✅ MongoDB connected"))
+  .catch((err) => {
+    console.error("❌ MongoDB connection failed:", err.message);
+    process.exit(1);
+  });
 }
 
 // Require live DB for data routes (avoids 10s mongoose buffer timeouts)
-app.use(requireMongo);
+// app.use(requireMongo);
 
 // Routes
 app.use("/api/auth", authRoutes);
