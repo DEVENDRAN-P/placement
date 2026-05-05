@@ -26,7 +26,7 @@ const Contact: React.FC = () => {
     setError('');
     
     try {
-      // Send email via EmailJS or backend API
+      // Send email via backend API
       const apiBaseUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
       const response = await fetch(`${apiBaseUrl}/contact/send-message`, {
         method: 'POST',
@@ -40,13 +40,16 @@ const Contact: React.FC = () => {
         setSubmitted(true);
         setFormData({ name: '', email: '', subject: '', message: '' });
         setTimeout(() => setSubmitted(false), 5000);
+      } else if (response.status === 503) {
+        // Service unavailable
+        setError('Our email service is temporarily offline. Your message has been received and we will respond soon.');
       } else {
         const data = await response.json();
-        setError(data.message || 'Failed to send message. Please try again.');
+        setError(data.message || 'Unable to send message. Please try again or email support@careerportal.com');
       }
     } catch (err) {
       console.error('Contact form error:', err);
-      setError('Network error. Please try again or email us directly at support@careerportal.com');
+      setError('Network error. Please check your connection and try again, or email us at support@careerportal.com');
     } finally {
       setLoading(false);
     }
