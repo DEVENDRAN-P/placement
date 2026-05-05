@@ -4,7 +4,6 @@ import { useAuth } from './context/FirebaseAuthContext';
 import ScrollToTop from './components/ScrollToTop';
 
 // Components
-import Dashboard from './components/Dashboard/Dashboard';
 import StudentDashboard from './components/Student/StudentDashboard';
 import CollegeDashboard from './components/College/CollegeDashboard';
 import RecruiterPage from './components/Recruiter/RecruiterPage';

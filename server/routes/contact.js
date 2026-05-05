@@ -7,7 +7,9 @@ const getTransporter = () => {
   const emailPass = process.env.EMAIL_PASS || process.env.EMAIL_PASSWORD;
 
   if (!emailUser || !emailPass) {
-    console.warn("⚠️  Email credentials not configured. Contact form will not send emails.");
+    console.warn(
+      "⚠️  Email credentials not configured. Contact form will not send emails.",
+    );
     return null;
   }
 
@@ -44,7 +46,12 @@ router.post("/send-message", async (req, res) => {
 
     const transporter = getTransporter();
     if (!transporter) {
-      console.log("📧 Contact form message (email service offline):", { name, email, subject, message });
+      console.log("📧 Contact form message (email service offline):", {
+        name,
+        email,
+        subject,
+        message,
+      });
       // Still return success to user, but log the message
       return res.status(200).json({
         success: true,
@@ -101,7 +108,10 @@ router.post("/send-message", async (req, res) => {
       await transporter.sendMail(confirmationEmail);
       console.log("✅ Confirmation email sent to user");
     } catch (confirmError) {
-      console.error("⚠️  Failed to send confirmation email:", confirmError.message);
+      console.error(
+        "⚠️  Failed to send confirmation email:",
+        confirmError.message,
+      );
       // Still continue to success response
     }
 

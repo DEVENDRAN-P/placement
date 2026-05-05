@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar } from 'recharts';
 import { TrendingUp, Award, Zap, Target, Code, UtensilsCrossed, Flame } from 'lucide-react';
-import { codingPlatformsAPI, analyticsAPI } from '../../services/api';
+import { codingPlatformsAPI } from '../../services/api';
 import { useAuth } from '../../context/FirebaseAuthContext';
 import { Navigate } from 'react-router-dom';
 
@@ -19,7 +19,6 @@ const CodingGrowthTracker: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [growthData, setGrowthData] = useState<any[]>([]);
-  const [insights, setInsights] = useState<any>(null);
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -81,15 +80,7 @@ const CodingGrowthTracker: React.FC = () => {
           console.warn('Growth analytics unavailable');
         }
 
-        // Fetch insights
-        try {
-          const insightsRes: any = await codingPlatformsAPI.getInsights();
-          if (insightsRes?.success) {
-            setInsights(insightsRes.data);
-          }
-        } catch (err) {
-          console.warn('Insights unavailable');
-        }
+
 
       } catch (err: any) {
         setError(err.message || 'Failed to load coding data');
