@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Mail, Phone, MapPin } from 'lucide-react';
 
 const Contact: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -9,25 +10,45 @@ const Contact: React.FC = () => {
   });
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     setFormData({
       ...formData,
       [e.target.name]: e.target.value
     });
+    setError('');
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setError('');
     
-    // Simulate API call
-    setTimeout(() => {
-      setSubmitted(true);
+    try {
+      // Send email via EmailJS or backend API
+      const response = await fetch('http://localhost:5000/api/contact/send-message', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData)
+      });
+
+      if (response.ok) {
+        setSubmitted(true);
+        setFormData({ name: '', email: '', subject: '', message: '' });
+        setTimeout(() => setSubmitted(false), 5000);
+      } else {
+        const data = await response.json();
+        setError(data.message || 'Failed to send message. Please try again.');
+      }
+    } catch (err) {
+      console.error('Contact form error:', err);
+      setError('Network error. Please try again or email us directly at support@careerportal.com');
+    } finally {
       setLoading(false);
-      setFormData({ name: '', email: '', subject: '', message: '' });
-      setTimeout(() => setSubmitted(false), 5000);
-    }, 1000);
+    }
   };
 
   return (
@@ -45,39 +66,26 @@ const Contact: React.FC = () => {
             {/* Email */}
             <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
               <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
-                <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                </svg>
+                <Mail className="w-6 h-6 text-blue-600" />
               </div>
-              <h3 className="font-bold text-slate-900 mb-2">Email</h3>
-              <p className="text-slate-600 text-sm">support@careerportal.com</p>
-              <p className="text-slate-600 text-sm">info@careerportal.com</p>
+              <h3 className="font-bold text-slate-900 mb-3">Email</h3>
+              <div className="space-y-2 text-slate-600 text-sm">
+                <p><strong>Support:</strong> <a href="mailto:support.careerportal2026@gmail.com" className="hover:text-blue-600">support.careerportal2026@gmail.com</a></p>
+              </div>
             </div>
 
             {/* Phone */}
             <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
               <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mb-4">
-                <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-                </svg>
+                <Phone className="w-6 h-6 text-green-600" />
               </div>
-              <h3 className="font-bold text-slate-900 mb-2">Phone</h3>
-              <p className="text-slate-600 text-sm">+1 (800) 123-4567</p>
-              <p className="text-slate-600 text-sm">Mon - Fri, 9am - 6pm EST</p>
+              <h3 className="font-bold text-slate-900 mb-3">Phone</h3>
+              <div className="space-y-2 text-slate-600 text-sm">
+                <p><a href="tel:+917418227907" className="hover:text-green-600">+91 7418227907</a></p>
+              </div>
             </div>
 
-            {/* Location */}
-            <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-              <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mb-4">
-                <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
-              </div>
-              <h3 className="font-bold text-slate-900 mb-2">Address</h3>
-              <p className="text-slate-600 text-sm">123 Tech Street</p>
-              <p className="text-slate-600 text-sm">San Francisco, CA 94105</p>
-            </div>
+
           </div>
 
           {/* Contact Form */}
@@ -85,8 +93,17 @@ const Contact: React.FC = () => {
             <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-8">
               {submitted && (
                 <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg flex items-center space-x-3">
-                  <span className="text-xl">✅</span>
-                  <p className="text-green-700 text-sm">Thank you! We've received your message and will get back to you soon.</p>
+                  <span className="text-2xl">✅</span>
+                  <div>
+                    <p className="text-green-900 font-semibold text-sm">Message sent successfully!</p>
+                    <p className="text-green-700 text-xs">We'll get back to you within 24 hours.</p>
+                  </div>
+                </div>
+              )}
+
+              {error && (
+                <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+                  <p className="text-red-700 text-sm">{error}</p>
                 </div>
               )}
 
@@ -100,7 +117,7 @@ const Contact: React.FC = () => {
                     value={formData.name}
                     onChange={handleChange}
                     required
-                    placeholder="John Doe"
+                    placeholder="Your full name"
                     className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-900"
                   />
                 </div>
@@ -114,7 +131,7 @@ const Contact: React.FC = () => {
                     value={formData.email}
                     onChange={handleChange}
                     required
-                    placeholder="john@example.com"
+                    placeholder="your.email@example.com"
                     className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-900"
                   />
                 </div>
@@ -133,7 +150,9 @@ const Contact: React.FC = () => {
                     <option value="general">General Inquiry</option>
                     <option value="support">Technical Support</option>
                     <option value="feedback">Feedback</option>
-                    <option value="partnership">Partnership</option>
+                    <option value="partnership">Partnership Opportunity</option>
+                    <option value="recruitment">Recruitment Services</option>
+                    <option value="college">College Registration</option>
                     <option value="other">Other</option>
                   </select>
                 </div>
@@ -147,8 +166,8 @@ const Contact: React.FC = () => {
                     onChange={handleChange}
                     required
                     rows={6}
-                    placeholder="Type your message here..."
-                    className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-900"
+                    placeholder="Please tell us how we can help..."
+                    className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-900 resize-none"
                   />
                 </div>
 

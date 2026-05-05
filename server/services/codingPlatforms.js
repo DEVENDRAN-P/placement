@@ -39,20 +39,36 @@ class CodingPlatformService {
         {
           headers: {
             "Content-Type": "application/json",
+            Referer: "https://leetcode.com",
             "User-Agent":
-              "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+              "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
           },
+          timeout: 10000,
         },
       );
 
+      // Check for GraphQL errors
+      if (response.data.errors) {
+        console.error("LeetCode GraphQL errors:", response.data.errors);
+        throw new Error("LeetCode API returned an error");
+      }
+
       const data = response.data.data;
 
-      if (!data.matchedUser) {
-        throw new Error("User not found");
+      if (!data || !data.matchedUser) {
+        throw new Error("User not found on LeetCode");
+      }
+
+      // Validate submission stats exist
+      if (
+        !data.matchedUser.submitStats ||
+        !data.matchedUser.submitStats.acSubmissionNum
+      ) {
+        throw new Error("Invalid LeetCode profile data");
       }
 
       const totalSolved = data.matchedUser.submitStats.acSubmissionNum.reduce(
-        (sum, stat) => sum + stat.count,
+        (sum, stat) => sum + (stat.count || 0),
         0,
       );
       const easySolved =
@@ -74,11 +90,11 @@ class CodingPlatformService {
         easySolved,
         mediumSolved,
         hardSolved,
-        rating: data.matchedUser.profile.ranking || 0,
+        rating: data.matchedUser.profile?.ranking || 0,
       };
     } catch (error) {
-      console.error("LeetCode API error:", error);
-      throw new Error("Failed to fetch LeetCode stats");
+      console.error("LeetCode API error:", error.message);
+      throw new Error(`Failed to fetch LeetCode stats: ${error.message}`);
     }
   }
 
@@ -90,24 +106,72 @@ class CodingPlatformService {
         {
           headers: {
             "User-Agent":
-              "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+              "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+            Referer: "https://www.codechef.com",
+            Accept:
+              "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
           },
+          timeout: 10000,
         },
       );
 
+      if (!response.data) {
+        throw new Error("Empty response from CodeChef");
+      }
+
       const $ = cheerio.load(response.data);
 
-      // Extract rating from the page
-      const ratingText = $(".rating-number").text().trim();
-      const rating = parseInt(ratingText) || 0;
+      // Extract rating from the page - try multiple selectors
+      let rating = 0;
+      const ratingSelectors = [
+        ".rating-number",
+        ".ratingNumber",
+        "[data-rating]",
+        ".rating-value",
+      ];
+
+      for (const selector of ratingSelectors) {
+        const ratingText = $(selector).text().trim();
+        if (ratingText) {
+          const parsed = parseInt(ratingText);
+          if (!isNaN(parsed)) {
+            rating = parsed;
+            break;
+          }
+        }
+      }
 
       // Extract stars
-      const starsText = $(".rating").text().trim();
-      const stars = starsText.split("★")[0].trim() || "";
+      let stars = "";
+      const starsSelectors = [".rating", ".ratingStars", "[data-stars]"];
+      for (const selector of starsSelectors) {
+        const starsText = $(selector).text().trim();
+        if (starsText && starsText.includes("★")) {
+          stars = starsText.split("★")[0].trim();
+          break;
+        }
+      }
 
-      // Extract total problems solved
-      const problemsSolvedText = $(".problems-solved").text();
-      const totalSolved = parseInt(problemsSolvedText.match(/(\d+)/)?.[1]) || 0;
+      // Extract total problems solved - try multiple selectors
+      let totalSolved = 0;
+      const solvedSelectors = [
+        ".problems-solved",
+        ".problemsSolved",
+        "[data-problems-solved]",
+      ];
+
+      for (const selector of solvedSelectors) {
+        const problemsSolvedText = $(selector).text();
+        const match = problemsSolvedText.match(/(\d+)/);
+        if (match && match[1]) {
+          totalSolved = parseInt(match[1]);
+          break;
+        }
+      }
+
+      if (rating === 0 && totalSolved === 0 && !stars) {
+        throw new Error("CodeChef profile not found or page structure changed");
+      }
 
       return {
         username,
@@ -116,44 +180,58 @@ class CodingPlatformService {
         totalSolved,
       };
     } catch (error) {
-      console.error("CodeChef scraping error:", error);
-      throw new Error("Failed to fetch CodeChef stats");
+      console.error("CodeChef scraping error:", error.message);
+      throw new Error(`Failed to fetch CodeChef stats: ${error.message}`);
     }
   }
 
   // Codeforces integration
   static async fetchCodeforcesStats(username) {
     try {
-      const response = await axios.get(
+      // First check if user exists
+      const userResponse = await axios.get(
         `https://codeforces.com/api/user.info?handles=${username}`,
+        {
+          headers: {
+            "User-Agent":
+              "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+          },
+          timeout: 10000,
+        },
       );
 
-      // Add proper null/undefined checks
-      if (
-        !response.data ||
-        response.data.status !== "OK" ||
-        !response.data.result ||
-        response.data.result.length === 0
-      ) {
-        throw new Error("User not found or invalid response");
+      // Check for API errors
+      if (!userResponse.data || userResponse.data.status !== "OK") {
+        throw new Error("Invalid Codeforces API response");
       }
 
-      const userInfo = response.data.result[0];
+      if (!userResponse.data.result || userResponse.data.result.length === 0) {
+        throw new Error("Codeforces user not found");
+      }
+
+      const userInfo = userResponse.data.result[0];
 
       if (!userInfo) {
-        throw new Error("Invalid user data");
+        throw new Error("Invalid user data from Codeforces");
       }
 
       // Get user submissions to count solved problems
       const submissionsResponse = await axios.get(
         `https://codeforces.com/api/user.status?handle=${username}&count=1000`,
+        {
+          headers: {
+            "User-Agent":
+              "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+          },
+          timeout: 10000,
+        },
       );
 
       if (
         !submissionsResponse.data ||
         submissionsResponse.data.status !== "OK"
       ) {
-        throw new Error("Failed to fetch submissions");
+        throw new Error("Failed to fetch Codeforces submissions");
       }
 
       const submissions = submissionsResponse.data.result || [];
@@ -178,8 +256,8 @@ class CodingPlatformService {
       else if (rating >= 2100) rank = "Master";
       else if (rating >= 1900) rank = "Candidate Master";
       else if (rating >= 1600) rank = "Expert";
-      else if (rating >= 1400) rank = "Pupil";
-      else if (rating >= 1200) rank = "Specialist";
+      else if (rating >= 1400) rank = "Specialist";
+      else if (rating >= 1200) rank = "Pupil";
 
       return {
         username: userInfo.handle,
@@ -188,8 +266,8 @@ class CodingPlatformService {
         totalSolved,
       };
     } catch (error) {
-      console.error("Codeforces API error:", error);
-      throw new Error("Failed to fetch Codeforces stats");
+      console.error("Codeforces API error:", error.message);
+      throw new Error(`Failed to fetch Codeforces stats: ${error.message}`);
     }
   }
 

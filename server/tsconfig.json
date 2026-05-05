@@ -4,7 +4,8 @@
     "ignoreDeprecations": "6.0",
     "allowJs": true,
     "esModuleInterop": true,
-    "types": ["jest", "node"]
+    "types": ["jest", "node"],
+    "rootDir": "."
   },
   "include": ["**/*.ts"]
 }

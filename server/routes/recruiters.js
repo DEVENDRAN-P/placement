@@ -440,78 +440,74 @@ router.get("/statistics", async (req, res) => {
 });
 
 // Search for students
-router.get(
-  "/search-students",
-  requireSubscription("Premium"),
-  async (req, res) => {
-    try {
-      const {
-        skills,
-        minCGPA,
-        maxBacklogs,
-        department,
-        year,
-        college,
-        page = 1,
-        limit = 20,
-      } = req.query;
+router.get("/search-students", async (req, res) => {
+  try {
+    const {
+      skills,
+      minCGPA,
+      maxBacklogs,
+      department,
+      year,
+      college,
+      page = 1,
+      limit = 20,
+    } = req.query;
 
-      const filter = {};
+    const filter = {};
 
-      if (minCGPA) {
-        filter["academicInfo.cgpa"] = { $gte: parseFloat(minCGPA) };
-      }
-
-      if (maxBacklogs) {
-        filter["academicInfo.backlogCount"] = { $lte: parseInt(maxBacklogs) };
-      }
-
-      if (department) {
-        filter["academicInfo.department"] = department;
-      }
-
-      if (year) {
-        filter["academicInfo.year"] = parseInt(year);
-      }
-
-      if (college) {
-        filter["college"] = college;
-      }
-
-      if (skills) {
-        const skillArray = skills.split(",").map((s) => s.trim());
-        filter["skills.name"] = { $in: skillArray };
-      }
-
-      const students = await Student.find(filter)
-        .populate("user", "profile.firstName profile.lastName email")
-        .populate("college", "name code")
-        .sort({ "academicInfo.cgpa": -1 })
-        .limit(limit * 1)
-        .skip((page - 1) * limit);
-
-      const total = await Student.countDocuments(filter);
-
-      res.json({
-        success: true,
-        data: {
-          students,
-          pagination: {
-            current: parseInt(page),
-            pages: Math.ceil(total / limit),
-            total,
-          },
-        },
-      });
-    } catch (error) {
-      console.error("Search students error:", error);
-      res.status(500).json({
-        success: false,
-        message: "Failed to search students",
-      });
+    if (minCGPA) {
+      filter["academicInfo.cgpa"] = { $gte: parseFloat(minCGPA) };
     }
-  },
-);
+
+    if (maxBacklogs) {
+      filter["academicInfo.backlogCount"] = { $lte: parseInt(maxBacklogs) };
+    }
+
+    if (department) {
+      filter["academicInfo.department"] = department;
+    }
+
+    if (year) {
+      filter["academicInfo.year"] = parseInt(year);
+    }
+
+    if (college) {
+      filter["college"] = college;
+    }
+
+    if (skills) {
+      const skillArray = skills.split(",").map((s) => s.trim());
+      filter["skills.name"] = { $in: skillArray };
+    }
+
+    const students = await Student.find(filter)
+      .populate("user", "profile.firstName profile.lastName email")
+      .populate("college", "name code")
+      .sort({ "academicInfo.cgpa": -1 })
+      .limit(limit * 1)
+      .skip((page - 1) * limit);
+
+    const total = await Student.countDocuments(filter);
+
+    res.json({
+      success: true,
+      data: {
+        students,
+        pagination: {
+          current: parseInt(page),
+          pages: Math.ceil(total / limit),
+          total,
+        },
+      },
+    });
+  } catch (error) {
+    console.error("Search students error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to search students",
+    });
+  }
+});
 
 // Update preferences
 router.put(

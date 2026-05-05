@@ -67,17 +67,40 @@ router.post(
       }
 
       // Use AI to shortlist students
-      const shortlisted = await AIAnalysisService.shortlistStudents(
+      const shortlistedRankings = await AIAnalysisService.shortlistStudents(
         requirements,
         eligibleStudents,
       );
 
+      // Map shortlisted rankings to actual student objects
+      const shortlistedStudents = shortlistedRankings
+        .slice(0, 50)
+        .map((ranking) => {
+          const student = eligibleStudents.find(
+            (s) => s._id.toString() === ranking.student.toString(),
+          );
+          return {
+            _id: student._id,
+            name: student.firstName
+              ? `${student.firstName} ${student.lastName}`
+              : student.email,
+            academicInfo: student.academicInfo,
+            college: student.college,
+            averageCodingRating:
+              AIAnalysisService.getAverageCodingRating(student),
+            totalCodingProblems:
+              student.codingProfiles?.totalProblemsSolved || 0,
+            matchScore: ranking.score,
+            matchReasons: ranking.reasons,
+          };
+        });
+
       res.json({
         success: true,
-        message: `Shortlisted ${shortlisted.length} students from ${eligibleStudents.length} eligible candidates`,
+        message: `Shortlisted ${shortlistedRankings.length} students from ${eligibleStudents.length} eligible candidates`,
         data: {
           totalEligible: eligibleStudents.length,
-          shortlisted: shortlisted.slice(0, 50), // Limit to top 50
+          shortlisted: shortlistedStudents,
           statistics: {
             averageCGPA:
               eligibleStudents.reduce(
@@ -86,7 +109,7 @@ router.post(
               ) / eligibleStudents.length,
             averageCodingRating:
               eligibleStudents.reduce(
-                (sum, s) => sum + s.averageCodingRating,
+                (sum, s) => sum + AIAnalysisService.getAverageCodingRating(s),
                 0,
               ) / eligibleStudents.length,
           },

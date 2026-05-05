@@ -3,8 +3,10 @@
 ## When You Provide a Username
 
 ### 🟦 LeetCode
+
 **Input:** Any valid LeetCode username  
 **Output Details Fetched:**
+
 - ✅ Username (normalized)
 - ✅ Total problems solved (AC count)
 - ✅ Easy problems solved
@@ -14,6 +16,7 @@
 - ✅ Last updated timestamp
 
 **Example Response:**
+
 ```json
 {
   "username": "davidgarner",
@@ -27,13 +30,15 @@
 
 **API Used:** GraphQL at `https://leetcode.com/graphql`  
 **Data Source:** Official LeetCode API  
-**Accuracy:** Real-time from LeetCode  
+**Accuracy:** Real-time from LeetCode
 
 ---
 
 ### 🔶 CodeChef
+
 **Input:** Any valid CodeChef username  
 **Output Details Fetched:**
+
 - ✅ Username (exact)
 - ✅ Rating
 - ✅ Star rating (5★, 4★, etc.)
@@ -41,6 +46,7 @@
 - ✅ Last updated timestamp
 
 **Example Response:**
+
 ```json
 {
   "username": "davidgarner92",
@@ -51,13 +57,15 @@
 ```
 
 **Data Source:** Web scraping from `https://www.codechef.com/users/{username}`  
-**Accuracy:** Current profile data  
+**Accuracy:** Current profile data
 
 ---
 
 ### 🔴 Codeforces
+
 **Input:** Any valid Codeforces handle  
 **Output Details Fetched:**
+
 - ✅ Username/Handle
 - ✅ Rating
 - ✅ Rank (Newbie → Grandmaster)
@@ -65,6 +73,7 @@
 - ✅ Last updated timestamp
 
 **Example Response:**
+
 ```json
 {
   "username": "DavidGarner",
@@ -87,7 +96,7 @@
 
 **API Used:** Codeforces official REST API  
 **Data Source:** `https://codeforces.com/api/user.info` + `https://codeforces.com/api/user.status`  
-**Accuracy:** Real-time from Codeforces  
+**Accuracy:** Real-time from Codeforces
 
 ---
 
@@ -96,16 +105,19 @@
 ### Validation Rules
 
 **LeetCode:**
+
 - Length: 3-20 characters
 - Characters: Alphanumeric, hyphens, underscores
 - Example: `davidgarner` ✅, `d-g_123` ✅, `ab` ❌
 
 **CodeChef:**
+
 - Length: 3-20 characters
 - Characters: Alphanumeric, hyphens, underscores
 - Example: `davidgarner92` ✅, `d_g92` ✅, `ab` ❌
 
 **Codeforces:**
+
 - Length: 3-24 characters
 - Characters: Alphanumeric, underscores only (no hyphens)
 - Case-sensitive
@@ -116,6 +128,7 @@
 ## 🔄 When Data is Fetched
 
 ### **Scenario 1: During Signup**
+
 1. Student enters coding platform username(s) in registration form
 2. User clicks "Create Account"
 3. Backend immediately fetches stats from each platform
@@ -124,6 +137,7 @@
 6. **Time:** Usually 2-5 seconds (depending on network)
 
 ### **Scenario 2: Manual Update**
+
 1. Student goes to "Link Coding Profiles" page
 2. Enters username(s)
 3. Clicks "Fetch Stats"
@@ -133,6 +147,7 @@
 7. **Time:** 2-5 seconds per platform
 
 ### **Scenario 3: Invalid Username**
+
 1. User provides invalid username
 2. Validation fails OR API returns error
 3. Error message shown
@@ -145,6 +160,7 @@
 ## 📊 Data Stored in Database
 
 ### MongoDB Structure
+
 ```javascript
 student.codingProfiles = {
   leetcode: {
@@ -154,23 +170,23 @@ student.codingProfiles = {
     mediumSolved: 180,
     hardSolved: 70,
     rating: 2100,
-    lastUpdated: "2026-05-04T10:30:00Z"
+    lastUpdated: "2026-05-04T10:30:00Z",
   },
   codechef: {
     username: "davidgarner92",
     rating: 1850,
     stars: "5★",
     totalSolved: 320,
-    lastUpdated: "2026-05-04T10:30:00Z"
+    lastUpdated: "2026-05-04T10:30:00Z",
   },
   codeforces: {
     username: "DavidGarner",
     rating: 1600,
     rank: "Expert",
     totalSolved: 280,
-    lastUpdated: "2026-05-04T10:30:00Z"
-  }
-}
+    lastUpdated: "2026-05-04T10:30:00Z",
+  },
+};
 ```
 
 ---
@@ -178,12 +194,14 @@ student.codingProfiles = {
 ## ✨ What Happens With The Fetched Data
 
 ### **Visible to Student:**
+
 - Profile shows coding stats
 - Dashboard displays stats
 - Coding Profiles page shows all data
 - Can update/refresh anytime
 
 ### **Used by System:**
+
 - **AI Matching:** Used to match with relevant jobs
 - **Recruiters:** Can see your coding skills
 - **Analytics:** Shows your progress
@@ -191,6 +209,7 @@ student.codingProfiles = {
 - **Placement Probability:** Calculated using coding stats
 
 ### **Visible to Recruiters:**
+
 - Total problems solved (each platform)
 - Ratings/Rankings
 - Competitive programming level
@@ -200,15 +219,16 @@ student.codingProfiles = {
 
 ## ⏱️ Performance Details
 
-| Operation | Time | Details |
-|-----------|------|---------|
-| LeetCode fetch | 500-1500ms | GraphQL query |
-| CodeChef fetch | 800-2000ms | Web scraping |
-| Codeforces fetch | 1000-2500ms | REST API + submissions |
-| **Total (all 3)** | **2-5 seconds** | Parallel fetches |
-| Retry (failed)** | **<1 second** | Error response |
+| Operation          | Time            | Details                |
+| ------------------ | --------------- | ---------------------- |
+| LeetCode fetch     | 500-1500ms      | GraphQL query          |
+| CodeChef fetch     | 800-2000ms      | Web scraping           |
+| Codeforces fetch   | 1000-2500ms     | REST API + submissions |
+| **Total (all 3)**  | **2-5 seconds** | Parallel fetches       |
+| Retry (failed)\*\* | **<1 second**   | Error response         |
 
 **Note:** Times may vary based on:
+
 - Network speed
 - Platform server load
 - Number of submissions (Codeforces)
@@ -219,6 +239,7 @@ student.codingProfiles = {
 ## 🔧 How to Test
 
 ### Test LeetCode
+
 ```
 1. Use username: "davidgarner" (or any valid username)
 2. Expected: Stats from https://leetcode.com/davidgarner
@@ -226,6 +247,7 @@ student.codingProfiles = {
 ```
 
 ### Test CodeChef
+
 ```
 1. Use username: "davidgarner92" (or any valid username)
 2. Expected: Stats from https://www.codechef.com/users/davidgarner92
@@ -233,6 +255,7 @@ student.codingProfiles = {
 ```
 
 ### Test Codeforces
+
 ```
 1. Use username: "DavidGarner" (case-sensitive!)
 2. Expected: Stats from https://codeforces.com/profile/DavidGarner
@@ -240,6 +263,7 @@ student.codingProfiles = {
 ```
 
 ### Test Error Handling
+
 ```
 1. Use invalid username: "xyz" (too short)
 2. Expected: Validation error before API call
@@ -252,20 +276,21 @@ student.codingProfiles = {
 
 ## 🛡️ Error Scenarios
 
-| Error | Cause | Solution |
-|-------|-------|----------|
-| Username too short | < 3 characters | Use 3+ character username |
+| Error              | Cause                     | Solution                        |
+| ------------------ | ------------------------- | ------------------------------- |
+| Username too short | < 3 characters            | Use 3+ character username       |
 | Invalid characters | Special chars not allowed | Remove hyphens (for Codeforces) |
-| User not found | Username doesn't exist | Check username spelling |
-| API unavailable | Platform down/blocked | Try again later |
-| Timeout | Network too slow | Check internet connection |
-| Rate limited | Too many requests | Wait a few minutes |
+| User not found     | Username doesn't exist    | Check username spelling         |
+| API unavailable    | Platform down/blocked     | Try again later                 |
+| Timeout            | Network too slow          | Check internet connection       |
+| Rate limited       | Too many requests         | Wait a few minutes              |
 
 ---
 
 ## 💡 Pro Tips
 
 ### For Students:
+
 1. **Use exact usernames** - Case-sensitive on Codeforces!
 2. **Update regularly** - Stats refresh each time you link
 3. **Link all platforms** - Better profile for recruiters
@@ -273,6 +298,7 @@ student.codingProfiles = {
 5. **Maintain active profiles** - Higher stats = better matches
 
 ### For Recruiters:
+
 1. **Review coding stats** - Key indicator of skill level
 2. **Check progression** - Look at when stats were last updated
 3. **Compare platforms** - Different strengths on different sites
@@ -283,22 +309,26 @@ student.codingProfiles = {
 ## 📞 Troubleshooting
 
 ### **Fetched stats are wrong**
+
 - Check if you provided the correct username
 - Verify username is on the correct platform
 - Log in to platform directly to verify your stats
 - Request manual update in "Link Coding Profiles"
 
 ### **Username not recognized**
+
 - Verify exact spelling and case (especially Codeforces)
 - Check for special characters
 - Ensure username is publicly accessible on platform
 
 ### **Stats not updating**
+
 - Click "Fetch Stats" again to refresh
 - Check your internet connection
 - Coding platforms may have rate limiting
 
 ### **Error during signup**
+
 - Profile is still created even if stats fail to fetch
 - Go to "Link Coding Profiles" page after signup
 - Try fetching stats again

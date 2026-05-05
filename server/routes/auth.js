@@ -12,6 +12,15 @@ const nodemailer = require("nodemailer");
 
 const router = express.Router();
 
+// Health check endpoint for auth service
+router.get("/status", (req, res) => {
+  res.json({
+    success: true,
+    status: "OK",
+    timestamp: new Date().toISOString(),
+  });
+});
+
 // Rate limiting for authentication endpoints
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes

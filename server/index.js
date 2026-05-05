@@ -25,6 +25,7 @@ const { apiLimiter } = require("./middleware/rateLimit");
 // const Sentry = require("@sentry/node");
 // const Tracing = require("@sentry/tracing");
 const apiDocsRoutes = require("./routes/apiDocs");
+const contactRoutes = require("./routes/contact");
 
 const app = express();
 
@@ -113,6 +114,7 @@ app.use("/api/referrals", referralsRoutes);
 app.use("/api/video-profile", videoProfileRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api-docs", apiDocsRoutes);
+app.use("/api/contact", contactRoutes);
 
 // Health check endpoint
 app.get("/api/health", (req, res) => {
@@ -153,10 +155,13 @@ app.use("*", (req, res) => {
 
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`✅ Server is running on port ${PORT}`);
   console.log(
     `📦 MongoDB connected to: ${process.env.MONGODB_URI?.split("?")[0]}`,
   );
   console.log(`🔥 Career Intelligence Portal API is LIVE`);
 });
+
+module.exports = app;
+module.exports.server = server;

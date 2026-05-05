@@ -64,6 +64,7 @@ export const studentAPI = {
   updateSocialLinks: (links: any) => api.post('/students/social-links', links),
   toggleProfileVisibility: () => api.post('/students/toggle-visibility'),
   getPublicProfile: (studentId: string) => api.get(`/students/public/${studentId}`),
+  getAllStudents: (params?: any) => api.get('/students/all', { params }),
 };
 
 // College APIs

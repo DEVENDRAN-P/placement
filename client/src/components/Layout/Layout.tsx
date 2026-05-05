@@ -29,12 +29,16 @@ const Layout: React.FC = () => {
         ...(user.role === 'student' ? [
           { label: 'Student Dashboard', href: '/student' },
           { label: 'Profile', href: '/student/profile' },
+          { label: 'Coding Growth', href: '/student/coding-growth' },
         ] : []),
         ...(user.role === 'college' ? [
           { label: 'College Dashboard', href: '/college' },
+          { label: 'Placements', href: '/college/placement-portal' },
         ] : []),
         ...(user.role === 'recruiter' ? [
           { label: 'Recruiter Dashboard', href: '/recruiter' },
+          { label: 'Post Job', href: '/recruiter/jobs' },
+          { label: 'Browse Candidates', href: '/recruiter/candidates' },
           { label: 'AI Shortlist', href: '/recruiter/ai-shortlisting' },
         ] : []),
       ]
@@ -133,8 +137,12 @@ const Layout: React.FC = () => {
             <div>
               <h4 className="font-semibold text-slate-900 mb-4">Product</h4>
               <ul className="space-y-2 text-sm text-slate-600">
-                <li><Link to="/recruiter" className="hover:text-blue-600 transition">For Recruiters</Link></li>
-                <li><Link to="/student/coding-profiles" className="hover:text-blue-600 transition">Coding Profiles</Link></li>
+                {(user?.role === 'recruiter' || !isAuthenticated) && (
+                  <li><Link to="/recruiter" className="hover:text-blue-600 transition">For Recruiters</Link></li>
+                )}
+                {(user?.role === 'student' || !isAuthenticated) && (
+                  <li><Link to="/student/coding-profiles" className="hover:text-blue-600 transition">Coding Profiles</Link></li>
+                )}
                 <li><Link to="/faq" className="hover:text-blue-600 transition">FAQ</Link></li>
               </ul>
             </div>
@@ -143,14 +151,14 @@ const Layout: React.FC = () => {
               <ul className="space-y-2 text-sm text-slate-600">
                 <li><Link to="/contact" className="hover:text-blue-600 transition">Contact Us</Link></li>
                 <li><Link to="/faq" className="hover:text-blue-600 transition">Help & Support</Link></li>
-                <li><Link to="/" className="hover:text-blue-600 transition">Status</Link></li>
+                <li><Link to="/status" className="hover:text-blue-600 transition">Status</Link></li>
               </ul>
             </div>
             <div>
               <h4 className="font-semibold text-slate-900 mb-4">Legal</h4>
               <ul className="space-y-2 text-sm text-slate-600">
-                <li><Link to="/" className="hover:text-blue-600 transition">Privacy Policy</Link></li>
-                <li><Link to="/" className="hover:text-blue-600 transition">Terms of Service</Link></li>
+                <li><Link to="/privacy" className="hover:text-blue-600 transition">Privacy Policy</Link></li>
+                <li><Link to="/terms" className="hover:text-blue-600 transition">Terms of Service</Link></li>
                 <li><Link to="/contact" className="hover:text-blue-600 transition">Support</Link></li>
               </ul>
             </div>

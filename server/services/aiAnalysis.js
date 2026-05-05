@@ -1,6 +1,5 @@
 const natural = require("natural");
 const { Matrix } = require("ml-matrix");
-const { LinearRegression } = require("ml-regression");
 const fs = require("fs").promises;
 const pdf = require("pdf-parse");
 const mammoth = require("mammoth");

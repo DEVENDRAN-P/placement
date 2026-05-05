@@ -139,7 +139,7 @@ const RecruiterPage: React.FC = () => {
                   <p className="text-slate-600 text-sm">Create a new job posting and find qualified candidates</p>
                 </div>
                 <Link
-                  to="/recruiter/post-job"
+                  to="/recruiter/jobs"
                   className="inline-block w-full text-center bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-lg transition"
                 >
                   Post Job

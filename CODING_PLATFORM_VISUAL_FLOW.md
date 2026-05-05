@@ -3,6 +3,7 @@
 ## 🎯 Complete User Journey
 
 ### Step 1: Student Visits Signup Page
+
 ```
 https://localhost:3000/register
      ↓
@@ -17,6 +18,7 @@ https://localhost:3000/register
 ```
 
 ### Step 2: Select Student Role
+
 ```
 Click "I'm a Student"
      ↓
@@ -73,6 +75,7 @@ Frontend (React)
 ## 🔄 Backend Processing
 
 ### Database Layer (MongoDB)
+
 ```
                     ┌─────────────────────────────┐
                     │   User Creation             │
@@ -130,6 +133,7 @@ Your Platform ──┐
 ## 📊 Data Transformation
 
 ### LeetCode Raw Response (from GraphQL)
+
 ```graphql
 {
   matchedUser: {
@@ -163,6 +167,7 @@ Your Platform ──┐
 ```
 
 ### CodeChef Raw Response (from Web Scraping)
+
 ```html
 <div class="rating-number">1850</div>
 <div class="rating">5★</div>
@@ -182,14 +187,17 @@ Your Platform ──┐
 ```
 
 ### Codeforces Raw Response (from REST API)
+
 ```json
 {
   "status": "OK",
-  "result": [{
-    "handle": "DavidGarner",
-    "rating": 1600,
-    "contributions": 42
-  }]
+  "result": [
+    {
+      "handle": "DavidGarner",
+      "rating": 1600,
+      "contributions": 42
+    }
+  ]
 }
 ```
 
@@ -219,11 +227,12 @@ Your Platform ──┐
 ## 💾 Data Storage in MongoDB
 
 ### Final Student Document
+
 ```javascript
 {
   _id: ObjectId("507f1f77bcf86cd799439011"),
   user: ObjectId("507f1f77bcf86cd799439010"),
-  
+
   codingProfiles: {
     leetcode: {
       username: "davidgarner",
@@ -234,7 +243,7 @@ Your Platform ──┐
       rating: 2100,
       lastUpdated: ISODate("2026-05-04T10:30:00Z")
     },
-    
+
     codechef: {
       username: "davidgarner92",
       rating: 1850,
@@ -242,7 +251,7 @@ Your Platform ──┐
       totalSolved: 320,
       lastUpdated: ISODate("2026-05-04T10:30:00Z")
     },
-    
+
     codeforces: {
       username: "DavidGarner",
       rating: 1600,
@@ -251,7 +260,7 @@ Your Platform ──┐
       lastUpdated: ISODate("2026-05-04T10:30:00Z")
     }
   },
-  
+
   // ... other student fields
 }
 ```
@@ -261,6 +270,7 @@ Your Platform ──┐
 ## ✅ Success Response to Frontend
 
 ### Backend Response
+
 ```json
 {
   "success": true,
@@ -278,6 +288,7 @@ Your Platform ──┐
 ```
 
 ### Frontend Receives & Processes
+
 ```
 ✅ Token saved to localStorage
 ✅ User redirected to /student dashboard
@@ -335,6 +346,7 @@ Your Platform ──┐
 ## 🔄 Error Scenarios
 
 ### Scenario 1: Invalid LeetCode Username
+
 ```
 Input: "xyz" (too short)
             ↓
@@ -348,6 +360,7 @@ Student Profile: Still created with empty LeetCode stats
 ```
 
 ### Scenario 2: LeetCode User Not Found
+
 ```
 Input: "notarealuser12345"
             ↓
@@ -364,6 +377,7 @@ Student Profile: Created with empty LeetCode stats
 ```
 
 ### Scenario 3: Network Timeout
+
 ```
 Input: Valid username
             ↓
@@ -456,24 +470,28 @@ Coding Growth Tracking
 After fetching coding profiles:
 
 ✅ **Profile Visibility**
-   - Recruiters see your coding stats
-   - Public profile shows achievements
-   - Competitive programming level displayed
+
+- Recruiters see your coding stats
+- Public profile shows achievements
+- Competitive programming level displayed
 
 ✅ **Smart Matching**
-   - AI matches you with relevant jobs
-   - Filters candidates by coding ability
-   - Recommends roles based on skills
+
+- AI matches you with relevant jobs
+- Filters candidates by coding ability
+- Recommends roles based on skills
 
 ✅ **Analytics**
-   - Track your progress over time
-   - See skill gaps
-   - Get career recommendations
+
+- Track your progress over time
+- See skill gaps
+- Get career recommendations
 
 ✅ **Verification**
-   - Coding stats are verified
-   - Adds credibility to profile
-   - Third-party validated
+
+- Coding stats are verified
+- Adds credibility to profile
+- Third-party validated
 
 ---
 

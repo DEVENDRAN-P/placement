@@ -47,6 +47,60 @@ const upload = multer({
   },
 });
 
+// Public endpoint to get all students (for recruiters/browsing) - before auth middleware
+router.get("/all", protect, async (req, res) => {
+  try {
+    const { page = 1, limit = 20 } = req.query;
+
+    // Only return students with public profiles or allow recruiters to see all
+    const filter =
+      req.user.role === "recruiter" ? {} : { profileVisibility: "public" };
+
+    const students = await Student.find(filter)
+      .populate("user", "profile.firstName profile.lastName email")
+      .populate("college", "name code")
+      .select("-resume -documents")
+      .sort({ createdAt: -1 })
+      .limit(limit * 1)
+      .skip((page - 1) * limit);
+
+    const total = await Student.countDocuments(filter);
+
+    // Transform data to match expected format
+    const formattedStudents = students.map((student) => ({
+      _id: student._id,
+      name: student.user?.profile?.firstName
+        ? `${student.user.profile.firstName} ${student.user.profile.lastName}`
+        : student.user?.email || "Unknown",
+      firstName: student.user?.profile?.firstName || "",
+      lastName: student.user?.profile?.lastName || "",
+      email: student.user?.email,
+      college: student.college,
+      academicInfo: student.academicInfo,
+      skills: student.skills,
+      codingProfiles: student.codingProfiles,
+      averageCodingRating: student.averageCodingRating,
+    }));
+
+    res.json({
+      success: true,
+      data: formattedStudents,
+      pagination: {
+        current: parseInt(page),
+        pages: Math.ceil(total / limit),
+        total,
+      },
+    });
+  } catch (error) {
+    console.error("Get all students error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to get students list",
+      error: process.env.NODE_ENV === "development" ? error.message : {},
+    });
+  }
+});
+
 // All student routes require authentication and student role
 router.use(protect);
 router.use(authorize("student"));

@@ -1,12 +1,12 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './context/FirebaseAuthContext';
+import ScrollToTop from './components/ScrollToTop';
 
 // Components
 import Dashboard from './components/Dashboard/Dashboard';
 import StudentDashboard from './components/Student/StudentDashboard';
 import CollegeDashboard from './components/College/CollegeDashboard';
-import RecruiterDashboard from './components/Recruiter/RecruiterDashboard';
 import RecruiterPage from './components/Recruiter/RecruiterPage';
 import Layout from './components/Layout/Layout';
 import Login from './components/Auth/Login';
@@ -28,6 +28,11 @@ import VideoProfileUpload from './components/Student/VideoProfileUpload';
 import AdminDashboard from './components/Admin/AdminDashboard';
 import Contact from './components/Contact';
 import FAQ from './components/FAQ';
+import PostJobPage from './components/Recruiter/PostJobPage';
+import BrowseCandidatesPage from './components/Recruiter/BrowseCandidatesPage';
+import PrivacyPolicy from './components/PrivacyPolicy';
+import TermsOfService from './components/TermsOfService';
+import StatusPage from './components/StatusPage';
 
 // Protected Route Component
 interface ProtectedRouteProps {
@@ -229,10 +234,26 @@ function AppContent() {
             }
           />
           <Route
-            path="recruiter/dashboard"
+            path="recruiter/jobs"
             element={
               <ProtectedRoute requiredRole="recruiter">
-                <RecruiterDashboard />
+                <PostJobPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="recruiter/candidates"
+            element={
+              <ProtectedRoute requiredRole="recruiter">
+                <BrowseCandidatesPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="recruiter/candidates/:placementId"
+            element={
+              <ProtectedRoute requiredRole="recruiter">
+                <BrowseCandidatesPage />
               </ProtectedRoute>
             }
           />
@@ -256,6 +277,9 @@ function AppContent() {
           {/* Public Routes */}
           <Route path="contact" element={<Contact />} />
           <Route path="faq" element={<FAQ />} />
+          <Route path="privacy" element={<PrivacyPolicy />} />
+          <Route path="terms" element={<TermsOfService />} />
+          <Route path="status" element={<StatusPage />} />
 
           {/* Public Student Profile - Accessible to recruiters */}
           <Route
@@ -274,6 +298,7 @@ function AppContent() {
 function App() {
   return (
     <Router>
+      <ScrollToTop />
       <AppContent />
     </Router>
   );
