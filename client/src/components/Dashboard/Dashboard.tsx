@@ -1,92 +1,113 @@
 import React from 'react';
 import { Link, Navigate } from 'react-router-dom';
 import { useAuth } from '../../context/FirebaseAuthContext';
+import { PageHeader } from '../ui/PageHeader';
+import { Card } from '../ui/Card';
+import { ChevronRight } from 'lucide-react';
 
 const Dashboard: React.FC = () => {
   const { isAuthenticated, user } = useAuth();
 
-  console.log('📊 Dashboard Component - User:', { isAuthenticated, role: user?.role });
-
-  // If authenticated, redirect to role-specific dashboard
   if (isAuthenticated && user?.role) {
     const roleRoutes: { [key: string]: string } = {
       student: '/student',
       college: '/college',
       recruiter: '/recruiter',
+      admin: '/admin',
     };
     const destination = roleRoutes[user.role];
     if (destination) {
-      console.log('🔄 Redirecting to role-specific dashboard:', destination);
       return <Navigate to={destination} replace />;
     }
   }
 
+  const links: Array<{ to: string; title: string; body: string }> = [];
+
+  if (!isAuthenticated) {
+    links.push(
+      {
+        to: '/login',
+        title: 'Sign in',
+        body: 'Access your placement workspace with your institutional account.',
+      },
+      {
+        to: '/register',
+        title: 'Create account',
+        body: 'Register as a student, college, or recruiter.',
+      },
+    );
+  } else if (user?.role === 'student') {
+    links.push(
+      {
+        to: '/student',
+        title: 'Student home',
+        body: 'Readiness, applications, and coding metrics from the database.',
+      },
+      {
+        to: '/student/profile',
+        title: 'Profile',
+        body: 'Academics, skills, projects, and platform handles.',
+      },
+    );
+  } else if (user?.role === 'college') {
+    links.push({
+      to: '/college',
+      title: 'College console',
+      body: 'Placement analytics and student records.',
+    });
+  } else if (user?.role === 'recruiter') {
+    links.push(
+      {
+        to: '/recruiter',
+        title: 'Recruiter home',
+        body: 'Postings, pipeline, and hiring metrics.',
+      },
+      {
+        to: '/recruiter/jobs',
+        title: 'Jobs',
+        body: 'Create and manage open roles.',
+      },
+    );
+  }
+
   return (
-    <div>
-      <h1 className="text-2xl font-semibold text-gray-900">Welcome to Career Portal</h1>
-      <p className="mt-2 text-gray-600">
-        AI-Powered Career Intelligence & Placement Portal
-      </p>
-      <div className="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {!isAuthenticated && (
-          <>
-            <Link to="/login" className="bg-white shadow rounded-lg p-6 hover:shadow-md transition">
-              <h2 className="text-lg font-medium text-gray-900">Login</h2>
-              <p className="mt-2 text-gray-600">
-                Sign in as student, college, or recruiter
-              </p>
-            </Link>
-            <Link to="/register" className="bg-white shadow rounded-lg p-6 hover:shadow-md transition">
-              <h2 className="text-lg font-medium text-gray-900">Sign Up</h2>
-              <p className="mt-2 text-gray-600">
-                Create a new account for placement
-              </p>
-            </Link>
-          </>
-        )}
+    <div className="min-h-screen bg-slate-50">
+      <div className="mx-auto max-w-5xl px-4 py-12 sm:px-6 lg:px-8">
+        <PageHeader
+          title="Career Intelligence Portal"
+          description="Role-based placement workflows backed by MongoDB and secured JWT sessions."
+        />
 
-        {isAuthenticated && user?.role === 'student' && (
-          <>
-            <Link to="/student" className="bg-white shadow rounded-lg p-6 hover:shadow-md transition">
-              <h2 className="text-lg font-medium text-gray-900">Student Dashboard</h2>
-              <p className="mt-2 text-gray-600">
-                View your placement readiness, coding performance, and AI insights.
-              </p>
+        <div className="mt-12 grid gap-4 sm:grid-cols-2">
+          {links.map((item) => (
+            <Link key={item.to} to={item.to} className="group block">
+              <Card
+                padding="md"
+                className="h-full transition hover:border-slate-300 hover:shadow-md"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <h2 className="text-base font-semibold text-slate-900">
+                      {item.title}
+                    </h2>
+                    <p className="mt-2 text-sm text-slate-600">{item.body}</p>
+                  </div>
+                  <ChevronRight className="h-5 w-5 shrink-0 text-slate-400 transition group-hover:text-slate-700" />
+                </div>
+              </Card>
             </Link>
-            <Link to="/student/profile" className="bg-white shadow rounded-lg p-6 hover:shadow-md transition">
-              <h2 className="text-lg font-medium text-gray-900">Student Profile Builder</h2>
-              <p className="mt-2 text-gray-600">
-                Build a verified career profile with skills, projects, and resume.
-              </p>
-            </Link>
-          </>
-        )}
+          ))}
+        </div>
 
-        {isAuthenticated && user?.role === 'college' && (
-          <Link to="/college" className="bg-white shadow rounded-lg p-6 hover:shadow-md transition">
-            <h2 className="text-lg font-medium text-gray-900">Placement Analytics</h2>
-            <p className="mt-2 text-gray-600">
-              Analyze placement rate, department performance, and hiring trends.
-            </p>
+        <p className="mt-10 text-center text-xs text-slate-500">
+          <Link to="/contact" className="underline hover:text-slate-700">
+            Contact
           </Link>
-        )}
-
-        {isAuthenticated && user?.role === 'recruiter' && (
-          <>
-            <Link to="/recruiter" className="bg-white shadow rounded-lg p-6 hover:shadow-md transition">
-              <h2 className="text-lg font-medium text-gray-900">Recruiter Dashboard</h2>
-              <p className="mt-2 text-gray-600">
-                Track job postings, applications, and hiring funnel analytics.
-              </p>
-            </Link>
-            <Link to="/recruiter/ai-shortlisting" className="bg-white shadow rounded-lg p-6 hover:shadow-md transition">
-              <h2 className="text-lg font-medium text-gray-900">AI Shortlisting</h2>
-              <p className="mt-2 text-gray-600">
-                Enter job requirements and let AI shortlist the best candidates.
-              </p>
-            </Link>
-          </>
-        )}
+          <span className="mx-2">·</span>
+          <Link to="/status" className="underline hover:text-slate-700">
+            Status
+          </Link>
+        </p>
       </div>
     </div>
   );

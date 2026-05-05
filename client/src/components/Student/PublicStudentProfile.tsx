@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Heart, MessageCircle, Share2, ExternalLink, BadgeCheck, Github, Linkedin, Globe, Download, Mail } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Heart, ExternalLink, BadgeCheck, Github, Linkedin, Globe, Download, Mail } from 'lucide-react';
 import axios from 'axios';
 import { useParams } from 'react-router-dom';
 
@@ -36,15 +36,8 @@ const PublicStudentProfile: React.FC = () => {
   const [profile, setProfile] = useState<StudentProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [saved, setSaved] = useState(false);
-  const [message, setMessage] = useState('');
 
-  useEffect(() => {
-    if (studentId) {
-      fetchProfile();
-    }
-  }, [studentId]);
-
-  const fetchProfile = async () => {
+  const fetchProfile = useCallback(async () => {
     try {
       setLoading(true);
       const token = localStorage.getItem('token');
@@ -63,7 +56,13 @@ const PublicStudentProfile: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [studentId]);
+
+  useEffect(() => {
+    if (studentId) {
+      fetchProfile();
+    }
+  }, [studentId, fetchProfile]);
 
   if (loading) {
     return (

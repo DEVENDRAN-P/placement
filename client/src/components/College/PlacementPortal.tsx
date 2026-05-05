@@ -1,14 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Search, Filter, Users, Award, Mail, FileText, TrendingUp,
-  Download, Plus, ChevronDown, Loader, AlertCircle
+  Search, Filter, Users, Award, Mail, TrendingUp,
+  Download, Loader, AlertCircle
 } from 'lucide-react';
 import { useAuth } from '../../context/FirebaseAuthContext';
-import axios from 'axios';
+import { collegeAPI } from '../../services/api';
 
 interface Student {
   _id: string;
-  user: { email: string };
+  user: {
+    email: string;
+    profile?: { firstName?: string; lastName?: string };
+  };
   academicInfo: {
     cgpa: number;
     department: string;
@@ -22,9 +25,15 @@ interface Student {
     codeforces?: { rating: number; totalSolved: number };
   };
   resume: { fileUrl?: string };
-  profile: { firstName: string; lastName: string };
   placementStatus: { isPlaced: boolean };
 }
+
+const studentDisplayName = (s: Student) => {
+  const fn = s.user?.profile?.firstName || '';
+  const ln = s.user?.profile?.lastName || '';
+  const name = `${fn} ${ln}`.trim();
+  return name || s.user?.email || 'Student';
+};
 
 interface FilterCriteria {
   minCGPA: number;
@@ -66,24 +75,18 @@ const PlacementPortal: React.FC = () => {
   const fetchStudents = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('token');
-      const response = await axios.get(
-        `${process.env.REACT_APP_API_URL}/colleges/students`,
-        {
-          headers: { Authorization: `Bearer ${token}` }
-        }
-      );
+      const res: any = await collegeAPI.getStudents({ limit: 100, page: 1 });
 
-      if (response.data.success) {
-        setStudents(response.data.data);
-        setFilteredStudents(response.data.data);
+      if (res?.success && res.data?.students) {
+        const list: Student[] = res.data.students;
+        setStudents(list);
+        setFilteredStudents(list);
 
-        // Calculate stats
-        const placed = response.data.data.filter((s: Student) => s.placementStatus.isPlaced).length;
+        const placed = list.filter((s) => s.placementStatus?.isPlaced).length;
         setStats({
-          total: response.data.data.length,
+          total: list.length,
           placed,
-          eligible: response.data.data.filter((s: Student) => s.academicInfo.cgpa >= 7.0).length
+          eligible: list.filter((s) => s.academicInfo.cgpa >= 7.0).length,
         });
       }
     } catch (error) {
@@ -167,7 +170,7 @@ const PlacementPortal: React.FC = () => {
     }
 
     const data = filteredStudents.map(s => ({
-      Name: `${s.profile.firstName} ${s.profile.lastName}`,
+      Name: studentDisplayName(s),
       Email: s.user.email,
       CGPA: s.academicInfo.cgpa,
       Department: s.academicInfo.department,
@@ -432,7 +435,7 @@ const PlacementPortal: React.FC = () => {
               />
               <div className="flex-1">
                 <p className="font-medium text-gray-900">
-                  {student.profile.firstName} {student.profile.lastName}
+                  {studentDisplayName(student)}
                 </p>
                 <p className="text-sm text-gray-600">{student.user.email}</p>
                 <div className="flex gap-4 mt-2 text-sm">
@@ -490,7 +493,7 @@ const PlacementPortal: React.FC = () => {
                         <span className="font-bold text-lg text-gray-600">#{index + 1}</span>
                         <div>
                           <p className="font-bold text-gray-900">
-                            {student.profile.firstName} {student.profile.lastName}
+                            {studentDisplayName(student)}
                           </p>
                           <p className="text-sm text-gray-600">{student.user.email}</p>
                         </div>

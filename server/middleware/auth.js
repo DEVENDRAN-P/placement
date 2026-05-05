@@ -1,8 +1,20 @@
 const jwt = require("jsonwebtoken");
+const mongoose = require("mongoose");
 const User = require("../models/User");
 
 // Protect routes - now supports both JWT and Firebase tokens
 const protect = async (req, res, next) => {
+  if (
+    process.env.NODE_ENV !== "test" &&
+    mongoose.connection.readyState !== 1
+  ) {
+    return res.status(503).json({
+      success: false,
+      message: "Database unavailable.",
+      code: "DB_UNAVAILABLE",
+    });
+  }
+
   let token;
 
   if (

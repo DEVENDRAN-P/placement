@@ -8,7 +8,6 @@ const AdminDashboard: React.FC = () => {
   const { isAuthenticated, user } = useAuth();
   const [loading, setLoading] = useState<boolean>(true);
   const [dashboard, setDashboard] = useState<any>(null);
-  const [users, setUsers] = useState<any[]>([]);
   const [selectedTab, setSelectedTab] = useState<string>('dashboard');
   const [statistics, setStatistics] = useState<any>(null);
 

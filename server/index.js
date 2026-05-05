@@ -26,6 +26,7 @@ const { apiLimiter } = require("./middleware/rateLimit");
 // const Tracing = require("@sentry/tracing");
 const apiDocsRoutes = require("./routes/apiDocs");
 const contactRoutes = require("./routes/contact");
+const { requireMongo, getMongoStatus } = require("./middleware/dbReady");
 
 const app = express();
 
@@ -81,23 +82,38 @@ app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 // Static files
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
-// Database connection
-mongoose
-  .connect(
-    process.env.MONGODB_URI || "mongodb://localhost:27017/career_intelligence",
-    {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    },
-  )
-  .then(() => {
-    if (process.env.NODE_ENV === "development") {
-      console.log("MongoDB connected successfully");
-    }
-  })
-  .catch((err) => {
-    console.error("MongoDB connection error:", err);
+// Database connection (Atlas-friendly timeouts; fail fast vs infinite buffering)
+const mongoOptions = {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+  serverSelectionTimeoutMS: 15000,
+  socketTimeoutMS: 45000,
+  maxPoolSize: 10,
+};
+
+if (process.env.NODE_ENV !== "test") {
+  mongoose.connection.on("connected", () => {
+    console.log("MongoDB connected successfully");
   });
+  mongoose.connection.on("disconnected", () => {
+    console.warn("MongoDB disconnected");
+  });
+  mongoose.connection.on("error", (err) => {
+    console.error("MongoDB connection error:", err.message);
+  });
+
+  mongoose
+    .connect(
+      process.env.MONGODB_URI || "mongodb://localhost:27017/career_intelligence",
+      mongoOptions,
+    )
+    .catch((err) => {
+      console.error("MongoDB initial connection failed:", err.message);
+    });
+}
+
+// Require live DB for data routes (avoids 10s mongoose buffer timeouts)
+app.use(requireMongo);
 
 // Routes
 app.use("/api/auth", authRoutes);
@@ -116,11 +132,16 @@ app.use("/api/admin", adminRoutes);
 app.use("/api-docs", apiDocsRoutes);
 app.use("/api/contact", contactRoutes);
 
-// Health check endpoint
+// Health check endpoint (works without MongoDB)
 app.get("/api/health", (req, res) => {
-  res.status(200).json({
-    status: "OK",
-    message: "Career Intelligence Portal API is running",
+  const mongo = getMongoStatus();
+  const ok = mongo === "connected";
+  res.status(ok ? 200 : 503).json({
+    status: ok ? "OK" : "DEGRADED",
+    message: ok
+      ? "Career Intelligence Portal API is running"
+      : "API up but database not connected",
+    mongodb: mongo,
     timestamp: new Date().toISOString(),
   });
 });
@@ -155,13 +176,15 @@ app.use("*", (req, res) => {
 
 const PORT = process.env.PORT || 5000;
 
-const server = app.listen(PORT, () => {
-  console.log(`✅ Server is running on port ${PORT}`);
-  console.log(
-    `📦 MongoDB connected to: ${process.env.MONGODB_URI?.split("?")[0]}`,
-  );
-  console.log(`🔥 Career Intelligence Portal API is LIVE`);
-});
+let server;
+if (process.env.NODE_ENV !== "test") {
+  server = app.listen(PORT, () => {
+    console.log(`Server listening on port ${PORT}`);
+    const uri = process.env.MONGODB_URI?.split("?")[0];
+    if (uri) console.log(`MongoDB URI target: ${uri}`);
+    console.log("Career Intelligence Portal API started");
+  });
+}
 
 module.exports = app;
 module.exports.server = server;

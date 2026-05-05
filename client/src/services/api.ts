@@ -23,16 +23,23 @@ api.interceptors.request.use(
 );
 
 // Response interceptor to handle errors
+let authRedirectScheduled = false;
 api.interceptors.response.use(
   (response) => {
     return response.data;
   },
   (error) => {
-    if (error.response?.status === 401) {
-      // Token expired or invalid
+    const status = error.response?.status;
+    if (status === 401) {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
-      window.location.href = '/login';
+      if (!authRedirectScheduled && window.location.pathname !== '/login') {
+        authRedirectScheduled = true;
+        window.location.assign('/login');
+        setTimeout(() => {
+          authRedirectScheduled = false;
+        }, 3000);
+      }
     }
     return Promise.reject(error.response?.data || error.message);
   }

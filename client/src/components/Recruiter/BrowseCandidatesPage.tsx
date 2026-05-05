@@ -44,8 +44,6 @@ const BrowseCandidatesPage: React.FC = () => {
     try {
       setLoading(true);
       
-      let result = null;
-      
       // Try to fetch applications for a specific placement first
       if (placementId) {
         try {

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, Navigate } from 'react-router-dom';
+import { Navigate } from 'react-router-dom';
 import { useAuth } from '../../context/FirebaseAuthContext';
 import { studentAPI } from '../../services/api';
 
@@ -241,7 +241,7 @@ const StudentProfile: React.FC = () => {
     <div>
       <h1 className="text-2xl font-semibold text-gray-900">Student Profile Builder</h1>
       <p className="mt-2 text-gray-600">
-        Build a verified career profile with academics, skills, projects, and coding profiles.Build a verified career profile with academics, skills, projects, and coding profiles.
+        Build a verified career profile with academics, skills, projects, and coding profiles.
       </p>
 
       {error && (

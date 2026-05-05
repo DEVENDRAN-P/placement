@@ -106,13 +106,30 @@ const createStudentProfile = async (userId, codingProfilesInput = {}) => {
     const inputData = codingProfilesInput[platform];
     if (inputData && inputData.username) {
       try {
+        console.log(
+          `📊 Fetching ${platform} stats for username: ${inputData.username}`,
+        );
+
+        // Validate username format first
+        if (
+          !CodingPlatformService.validateUsername(platform, inputData.username)
+        ) {
+          console.warn(
+            `⚠️ Invalid ${platform} username format: ${inputData.username}`,
+          );
+          continue;
+        }
+
         const stats = await CodingPlatformService.fetchCodingStats(
           platform,
           inputData.username,
         );
+
+        console.log(`✅ Successfully fetched ${platform} stats:`, stats);
+
         if (platform === "leetcode") {
           codingProfilesData.leetcode = {
-            username: stats.username,
+            username: stats.username || inputData.username,
             totalSolved: stats.totalSolved || 0,
             easySolved: stats.easySolved || 0,
             mediumSolved: stats.mediumSolved || 0,
@@ -122,7 +139,7 @@ const createStudentProfile = async (userId, codingProfilesInput = {}) => {
           };
         } else if (platform === "codechef") {
           codingProfilesData.codechef = {
-            username: stats.username,
+            username: stats.username || inputData.username,
             rating: stats.rating || 0,
             stars: stats.stars || "",
             totalSolved: stats.totalSolved || 0,
@@ -130,7 +147,7 @@ const createStudentProfile = async (userId, codingProfilesInput = {}) => {
           };
         } else if (platform === "codeforces") {
           codingProfilesData.codeforces = {
-            username: stats.username,
+            username: stats.username || inputData.username,
             rating: stats.rating || 0,
             rank: stats.rank || "Newbie",
             totalSolved: stats.totalSolved || 0,
@@ -139,9 +156,17 @@ const createStudentProfile = async (userId, codingProfilesInput = {}) => {
         }
       } catch (error) {
         console.error(
-          `Failed to fetch ${platform} stats during signup:`,
+          `❌ Failed to fetch ${platform} stats during signup - ${inputData.username}:`,
           error.message,
         );
+        // Still save the username even if fetch fails, so user can retry later
+        if (platform === "leetcode") {
+          codingProfilesData.leetcode.username = inputData.username;
+        } else if (platform === "codechef") {
+          codingProfilesData.codechef.username = inputData.username;
+        } else if (platform === "codeforces") {
+          codingProfilesData.codeforces.username = inputData.username;
+        }
       }
     }
   }
@@ -723,9 +748,19 @@ router.post(
       });
     } catch (error) {
       console.error("Firebase login error:", error);
-      res.status(500).json({
+      const isDb =
+        error.name === "MongoServerSelectionError" ||
+        error.name === "MongoNetworkError" ||
+        /buffering timed out|ECONNREFUSED|ENOTFOUND/i.test(
+          String(error.message || ""),
+        );
+      const status = isDb ? 503 : 500;
+      res.status(status).json({
         success: false,
-        message: "Firebase login failed",
+        message: isDb
+          ? "Database unavailable. Check MongoDB Atlas URI and network access."
+          : "Firebase login failed",
+        code: isDb ? "DB_UNAVAILABLE" : "FIREBASE_LOGIN_ERROR",
         error: process.env.NODE_ENV === "development" ? error.message : {},
       });
     }

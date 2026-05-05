@@ -2,14 +2,22 @@ const express = require("express");
 const router = express.Router();
 const nodemailer = require("nodemailer");
 
-// Configure your email service (using Gmail as example)
-const transporter = nodemailer.createTransport({
-  service: "gmail",
-  auth: {
-    user: process.env.EMAIL_USER || "noreply.careerpro@gmail.com",
-    pass: process.env.EMAIL_PASSWORD || "your_app_password_here",
-  },
-});
+const getTransporter = () => {
+  const emailUser = process.env.EMAIL_USER;
+  const emailPass = process.env.EMAIL_PASS || process.env.EMAIL_PASSWORD;
+
+  if (!emailUser || !emailPass) {
+    return null;
+  }
+
+  return nodemailer.createTransport({
+    service: "gmail",
+    auth: {
+      user: emailUser,
+      pass: emailPass,
+    },
+  });
+};
 
 // POST /api/contact/send-message
 router.post("/send-message", async (req, res) => {
@@ -33,10 +41,19 @@ router.post("/send-message", async (req, res) => {
       });
     }
 
+    const transporter = getTransporter();
+    if (!transporter) {
+      return res.status(503).json({
+        success: false,
+        message:
+          "Contact service is temporarily unavailable. Please try again later.",
+      });
+    }
+
     // Prepare email content
     const mailOptions = {
-      from: process.env.EMAIL_USER || "noreply.careerpro@gmail.com",
-      to: "support@careerportal.com",
+      from: process.env.EMAIL_USER,
+      to: process.env.SUPPORT_EMAIL || process.env.EMAIL_USER,
       subject: `[Career Portal Contact] ${subject} - from ${name}`,
       html: `
         <h2>New Contact Form Submission</h2>
@@ -56,7 +73,7 @@ router.post("/send-message", async (req, res) => {
 
     // Optional: Send confirmation email to user
     const confirmationEmail = {
-      from: process.env.EMAIL_USER || "noreply.careerpro@gmail.com",
+      from: process.env.EMAIL_USER,
       to: email,
       subject: "We received your message - Career Portal",
       html: `

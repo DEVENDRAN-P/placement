@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Mail, Phone, MapPin } from 'lucide-react';
+import { Mail, Phone } from 'lucide-react';
 
 const Contact: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -27,7 +27,8 @@ const Contact: React.FC = () => {
     
     try {
       // Send email via EmailJS or backend API
-      const response = await fetch('http://localhost:5000/api/contact/send-message', {
+      const apiBaseUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const response = await fetch(`${apiBaseUrl}/contact/send-message`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

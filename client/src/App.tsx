@@ -79,7 +79,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requiredRole 
 };
 
 function AppContent() {
-  const { isLoading, isAuthenticated } = useAuth();
+  const { isLoading, isAuthenticated, user } = useAuth();
 
   if (isLoading) {
     return (
@@ -98,15 +98,29 @@ function AppContent() {
     <div className="min-h-screen bg-gray-50">
       <Routes>
         {/* Public Auth Routes */}
-        <Route path="/login" element={!isAuthenticated ? <Login /> : <Navigate to="/dashboard" replace />} />
-        <Route path="/register" element={!isAuthenticated ? <Register /> : <Navigate to="/dashboard" replace />} />
+        <Route path="/login" element={!isAuthenticated ? <Login /> : <Navigate to="/student" replace />} />
+        <Route path="/register" element={!isAuthenticated ? <Register /> : <Navigate to="/student" replace />} />
 
         {/* Protected Routes with Layout */}
         <Route path="/" element={<Layout />}>
-          <Route index element={<Navigate to="/dashboard" replace />} />
+          <Route index element={<Navigate to="/student" replace />} />
 
-          {/* Public Routes */}
-          <Route path="dashboard" element={<Dashboard />} />
+          {/* Dashboard - Redirect to appropriate dashboard based on role */}
+          <Route 
+            path="dashboard" 
+            element={
+              isAuthenticated ? (
+                <Navigate to={
+                  user?.role === 'student' ? '/student' : 
+                  user?.role === 'college' ? '/college' : 
+                  user?.role === 'recruiter' ? '/recruiter' : 
+                  user?.role === 'admin' ? '/admin' : '/student'
+                } replace />
+              ) : (
+                <Navigate to="/login" replace />
+              )
+            } 
+          />
 
           {/* Student Routes */}
           <Route
@@ -289,7 +303,7 @@ function AppContent() {
         </Route>
 
         {/* 404 Route */}
-        <Route path="*" element={<Navigate to="/dashboard" replace />} />
+        <Route path="*" element={<Navigate to="/student" replace />} />
       </Routes>
     </div>
   );

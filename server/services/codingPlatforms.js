@@ -67,10 +67,6 @@ class CodingPlatformService {
         throw new Error("Invalid LeetCode profile data");
       }
 
-      const totalSolved = data.matchedUser.submitStats.acSubmissionNum.reduce(
-        (sum, stat) => sum + (stat.count || 0),
-        0,
-      );
       const easySolved =
         data.matchedUser.submitStats.acSubmissionNum.find(
           (stat) => stat.difficulty === "Easy",
@@ -83,6 +79,13 @@ class CodingPlatformService {
         data.matchedUser.submitStats.acSubmissionNum.find(
           (stat) => stat.difficulty === "Hard",
         )?.count || 0;
+
+      // Calculate totalSolved from individual difficulties to avoid double-counting
+      const totalSolved = easySolved + mediumSolved + hardSolved;
+
+      console.log(
+        `📊 LeetCode stats for ${data.matchedUser.username}: Easy=${easySolved}, Medium=${mediumSolved}, Hard=${hardSolved}, Total=${totalSolved}`,
+      );
 
       return {
         username: data.matchedUser.username,

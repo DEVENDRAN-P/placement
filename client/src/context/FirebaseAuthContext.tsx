@@ -12,6 +12,9 @@ import { auth, db } from '../config/firebase';
 import { User, Student, College, Recruiter } from '../types';
 import axios from 'axios';
 
+const apiBaseUrl = () =>
+  process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+
 interface AuthContextType {
   user: User | null;
   firebaseUser: FirebaseUser | null;
@@ -84,60 +87,68 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUserData) => {
       try {
         if (firebaseUserData) {
-          console.log('User logged in:', firebaseUserData.email);
-          setFirebaseUser(firebaseUserData);
-          
-          // First, sync with MongoDB backend to ensure user exists there
-          try {
-            const response = await axios.post(
-              `${process.env.REACT_APP_API_URL}/auth/firebase-login`,
-              {
-                email: firebaseUserData.email,
-                firstName: firebaseUserData.displayName?.split(' ')[0] || 'User',
-                lastName: firebaseUserData.displayName?.split(' ').slice(1).join(' ') || firebaseUserData.email?.split('@')[0] || 'Profile',
-                photoURL: firebaseUserData.photoURL,
-                role: 'student',
-              }
-            );
+          let jwtToken: string | null = null;
 
-            if (response.data.success) {
-              const { token: jwtToken } = response.data.data;
-              // Store JWT token from backend instead of Firebase token
-              localStorage.setItem('token', jwtToken);
-              setToken(jwtToken);
-              console.log('✅ Backend sync successful, using JWT token for:', firebaseUserData.email);
-            }
-          } catch (backendSyncError: any) {
-            console.warn('⚠️ Backend sync failed, attempting with Firebase token:', backendSyncError?.message || backendSyncError);
-            // Fallback to Firebase token if backend sync fails
-            try {
-              const idToken = await firebaseUserData.getIdToken();
-              setToken(idToken);
-              localStorage.setItem('token', idToken);
-            } catch (tokenError) {
-              console.warn('Could not get ID token:', tokenError);
-            }
-          }
-
-          // Try to fetch user document from Firestore
-          let userData = null;
-          let userRole = 'student';
-          
+          let userData: any = null;
+          let userRole: 'student' | 'college' | 'recruiter' = 'student';
           try {
             const userDocRef = doc(db, 'users', firebaseUserData.uid);
             const userDocSnap = await getDoc(userDocRef);
             if (userDocSnap.exists()) {
               userData = userDocSnap.data();
-              userRole = userData.role || 'student';
-              console.log('✅ User data fetched from Firestore:', userData);
-            } else {
-              console.log('⚠️ User document not found in Firestore, defaulting to student');
+              const r = userData.role;
+              if (r === 'college' || r === 'recruiter' || r === 'student') {
+                userRole = r;
+              }
             }
-          } catch (error) {
-            console.log('⚠️ Could not fetch user document:', error);
+          } catch {
+            /* Firestore optional */
           }
 
-          // Create normalized user object
+          try {
+            const response = await axios.post(`${apiBaseUrl()}/auth/firebase-login`, {
+              email: firebaseUserData.email,
+              firstName:
+                firebaseUserData.displayName?.split(' ')[0] ||
+                userData?.firstName ||
+                'User',
+              lastName:
+                firebaseUserData.displayName?.split(' ').slice(1).join(' ') ||
+                userData?.lastName ||
+                firebaseUserData.email?.split('@')[0] ||
+                'User',
+              photoURL: firebaseUserData.photoURL,
+              role: userRole,
+            });
+
+            if (response.data.success) {
+              const { token } = response.data.data;
+              localStorage.setItem('token', token);
+              setToken(token);
+              jwtToken = token;
+            }
+          } catch (backendSyncError: any) {
+            console.warn('Backend sync failed:', backendSyncError?.message || backendSyncError);
+          }
+
+          if (!jwtToken) {
+            localStorage.removeItem('token');
+            setToken(null);
+            try {
+              await signOut(auth);
+            } catch {
+              /* ignore */
+            }
+            setFirebaseUser(null);
+            setUser(null);
+            setProfileData(null);
+            setIsAuthenticated(false);
+            setIsLoading(false);
+            return;
+          }
+
+          setFirebaseUser(firebaseUserData);
+
           const normalizedUser = createUserFromFirebase(firebaseUserData, userRole);
           setUser(normalizedUser);
           setIsAuthenticated(true);
@@ -183,60 +194,60 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
    const login = async (email: string, password: string) => {
     try {
       setIsLoading(true);
-      console.log('🔐 Attempting login for:', email);
       
-      // Authenticate with Firebase
       const result = await signInWithEmailAndPassword(auth, email, password);
       const fbUser = result.user;
-      console.log('✅ Firebase login successful for:', email);
-      
-      // Parse display name if available, or use email as fallback
+
+      let userRole: 'student' | 'college' | 'recruiter' = 'student';
+      try {
+        const userDocRef = doc(db, 'users', fbUser.uid);
+        const snap = await getDoc(userDocRef);
+        if (snap.exists()) {
+          const d = snap.data();
+          if (d.role === 'college' || d.role === 'recruiter' || d.role === 'student') {
+            userRole = d.role;
+          }
+        }
+      } catch {
+        /* optional */
+      }
+
       const nameParts = fbUser.displayName?.split(' ') || ['User', ''];
       const firstName = nameParts[0] || 'User';
       const lastName = nameParts[1] || fbUser.email?.split('@')[0] || 'Profile';
-      
+
       try {
-        // Call backend firebase-login endpoint to sync user with MongoDB
-        const response = await axios.post(
-          `${process.env.REACT_APP_API_URL}/auth/firebase-login`,
-          {
-            email: fbUser.email,
-            firstName,
-            lastName,
-            photoURL: fbUser.photoURL,
-            role: 'student', // Default role, can be updated in profile
-          }
-        );
+        const response = await axios.post(`${apiBaseUrl()}/auth/firebase-login`, {
+          email: fbUser.email,
+          firstName,
+          lastName,
+          photoURL: fbUser.photoURL,
+          role: userRole,
+        });
 
         if (response.data.success) {
           const { token, user: backendUser, profileData } = response.data.data;
-          
-          // Store backend JWT token
+
           localStorage.setItem('token', token);
           localStorage.setItem('user', JSON.stringify(backendUser));
-          
+
           setToken(token);
           setFirebaseUser(fbUser);
-          
+
           const normalizedUser = createUserFromFirebase(fbUser, backendUser.role);
           setUser(normalizedUser);
           setProfileData(profileData);
           setIsAuthenticated(true);
-          
-          console.log('✅ Backend sync successful, using JWT token');
         } else {
           throw new Error(response.data.message || 'Backend sync failed');
         }
       } catch (backendError: any) {
-        console.warn('⚠️ Backend sync failed, but Firebase auth succeeded:', backendError.message);
-        // Still allow Firebase login even if backend sync fails
-        try {
-          const idToken = await fbUser.getIdToken();
-          setToken(idToken);
-          localStorage.setItem('firebaseToken', idToken);
-        } catch (tokenError) {
-          console.warn('⚠️ Could not get Firebase token:', tokenError);
-        }
+        await signOut(auth);
+        const msg =
+          backendError.response?.data?.message ||
+          backendError.message ||
+          'Could not sign in. Check that the API and database are running.';
+        throw new Error(msg);
       }
     } catch (error: any) {
       const errorCode = error.code;
@@ -392,7 +403,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         }
 
         const response = await axios.post(
-          `${process.env.REACT_APP_API_URL}/auth/firebase-login`,
+          `${apiBaseUrl()}/auth/firebase-login`,
           backendPayload
         );
 
