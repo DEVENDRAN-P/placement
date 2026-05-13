@@ -6,7 +6,6 @@ import {
   onAuthStateChanged,
   User as FirebaseUser,
   updateProfile as updateFirebaseProfile,
-  sendPasswordResetEmail,
 } from 'firebase/auth';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { auth, db } from '../config/firebase';
@@ -512,10 +511,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const updateUserProfile = (profileData: any) => {
-    setProfileData(profileData);
   };
 
   const value: AuthContextType = {

@@ -310,11 +310,12 @@ router.post(
       try {
         await user.save();
       } catch (err) {
-        if (err.code === 11000 || err.code === 'E11000') {
+        if (err.code === 11000 || err.code === "E11000") {
           // user already exists
           return res.status(409).json({
             success: false,
-            message: "Email already registered. Please login or use a different email.",
+            message:
+              "Email already registered. Please login or use a different email.",
           });
         } else {
           throw err;
@@ -608,25 +609,25 @@ router.post(
 
       let user = await User.findOne({ email });
 
-       // If user doesn't exist, create them
-       if (!user) {
-         // Generate a random password for Firebase users (not used for login)
-         const randomPassword = Math.random().toString(36).slice(-8);
-         user = new User({
-           email,
-           password: randomPassword,
-           role,
-           profile: {
-             firstName,
-             lastName,
-             phone: phone || "",
-             avatar: photoURL || "",
-           },
-           isVerified: true, // Firebase users are considered verified
-           isFirebaseUser: true,
-         });
+      // If user doesn't exist, create them
+      if (!user) {
+        // Generate a random password for Firebase users (not used for login)
+        const randomPassword = Math.random().toString(36).slice(-8);
+        user = new User({
+          email,
+          password: randomPassword,
+          role,
+          profile: {
+            firstName,
+            lastName,
+            phone: phone || "",
+            avatar: photoURL || "",
+          },
+          isVerified: true, // Firebase users are considered verified
+          isFirebaseUser: true,
+        });
 
-         await user.save();
+        await user.save();
 
         // Create role-specific profile
         if (role === "student") {
@@ -805,7 +806,8 @@ router.post(
         // Don't reveal if email exists for security
         return res.json({
           success: true,
-          message: "If an account exists with this email, a password reset link has been sent.",
+          message:
+            "If an account exists with this email, a password reset link has been sent.",
         });
       }
 
@@ -813,7 +815,7 @@ router.post(
       const resetToken = jwt.sign(
         { email, userId: user._id },
         process.env.JWT_SECRET,
-        { expiresIn: "1h" }
+        { expiresIn: "1h" },
       );
 
       // Store reset token in user document
@@ -857,7 +859,8 @@ router.post(
 
       res.json({
         success: true,
-        message: "If an account exists with this email, a password reset link has been sent.",
+        message:
+          "If an account exists with this email, a password reset link has been sent.",
       });
     } catch (error) {
       console.error("Forgot password error:", error);
@@ -867,7 +870,7 @@ router.post(
         error: process.env.NODE_ENV === "development" ? error.message : {},
       });
     }
-  }
+  },
 );
 
 // Reset Password
@@ -924,7 +927,8 @@ router.post(
 
       res.json({
         success: true,
-        message: "Password reset successful. Please login with your new password.",
+        message:
+          "Password reset successful. Please login with your new password.",
       });
     } catch (error) {
       console.error("Reset password error:", error);
@@ -934,7 +938,7 @@ router.post(
         error: process.env.NODE_ENV === "development" ? error.message : {},
       });
     }
-  }
+  },
 );
 
 // Logout
