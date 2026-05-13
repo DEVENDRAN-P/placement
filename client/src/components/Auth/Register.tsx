@@ -103,16 +103,14 @@ const Register: React.FC = () => {
         } : undefined,
       });
 
-      // Show success message briefly before navigating
-      setTimeout(() => {
-        const dashboardRoutes: { [key: string]: string } = {
-          student: '/student',
-          college: '/college',
-          recruiter: '/recruiter',
-        };
-        const destination = dashboardRoutes[roleValue] || '/dashboard';
-        navigate(destination);
-      }, 400);
+      // Navigate immediately without delay
+      const dashboardRoutes: { [key: string]: string } = {
+        student: '/student',
+        college: '/college',
+        recruiter: '/recruiter',
+      };
+      const destination = dashboardRoutes[roleValue] || '/dashboard';
+      navigate(destination);
     } catch (err: unknown) {
       const errorMessage =
         err instanceof Error ? err.message : 'Registration failed. Please try again.';

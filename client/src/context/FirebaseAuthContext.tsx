@@ -6,6 +6,7 @@ import {
   onAuthStateChanged,
   User as FirebaseUser,
   updateProfile as updateFirebaseProfile,
+  sendPasswordResetEmail,
 } from 'firebase/auth';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { auth, db } from '../config/firebase';
@@ -38,6 +39,8 @@ interface AuthContextType {
     };
   }) => Promise<void>;
   logout: () => Promise<void>;
+  forgotPassword: (email: string) => Promise<void>;
+  resetPassword: (token: string, newPassword: string) => Promise<void>;
   updateProfile: (profileData: any) => void;
   updateUserProfile: (profileData: any) => void;
 }
@@ -105,21 +108,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             /* Firestore optional */
           }
 
-          try {
-            const response = await axios.post(`${apiBaseUrl()}/auth/firebase-login`, {
-              email: firebaseUserData.email,
-              firstName:
-                firebaseUserData.displayName?.split(' ')[0] ||
-                userData?.firstName ||
-                'User',
-              lastName:
-                firebaseUserData.displayName?.split(' ').slice(1).join(' ') ||
-                userData?.lastName ||
-                firebaseUserData.email?.split('@')[0] ||
-                'User',
-              photoURL: firebaseUserData.photoURL,
-              role: userRole,
-            });
+           try {
+             const response = await axios.post(`${apiBaseUrl()}/auth/firebase-login`, {
+               email: firebaseUserData.email,
+               firstName:
+                 (firebaseUserData.displayName && firebaseUserData.displayName.split(' ')[0]) ||
+                 userData?.firstName ||
+                 'User',
+               lastName:
+                 (firebaseUserData.displayName && firebaseUserData.displayName.split(' ').slice(1).join(' ')) ||
+                 userData?.lastName ||
+                 firebaseUserData.email?.split('@')[0] ||
+                 'User',
+               photoURL: firebaseUserData.photoURL,
+               role: userRole,
+             });
 
             if (response.data.success) {
               const { token } = response.data.data;
@@ -212,18 +215,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         /* optional */
       }
 
-      const nameParts = fbUser.displayName?.split(' ') || ['User', ''];
-      const firstName = nameParts[0] || 'User';
-      const lastName = nameParts[1] || fbUser.email?.split('@')[0] || 'Profile';
+       const nameParts = fbUser.displayName?.split(' ') || ['User', ''];
+       const firstName = nameParts[0] || 'User';
+       const lastName = nameParts[1] || fbUser.email?.split('@')[0] || 'Profile';
 
-      try {
-        const response = await axios.post(`${apiBaseUrl()}/auth/firebase-login`, {
-          email: fbUser.email,
-          firstName,
-          lastName,
-          photoURL: fbUser.photoURL,
-          role: userRole,
-        });
+       try {
+         const response = await axios.post(`${apiBaseUrl()}/auth/firebase-login`, {
+           email: fbUser.email,
+           firstName: (fbUser.displayName && fbUser.displayName.split(' ')[0]) || firstName,
+           lastName: (fbUser.displayName && fbUser.displayName.split(' ').slice(1).join(' ')) || 
+                     (fbUser.email?.split('@')[0]) || lastName,
+           photoURL: fbUser.photoURL,
+           role: userRole,
+         });
 
         if (response.data.success) {
           const { token, user: backendUser, profileData } = response.data.data;
@@ -460,6 +464,60 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setProfileData(profileData);
   };
 
+  const forgotPassword = async (email: string) => {
+    try {
+      setIsLoading(true);
+      console.log('🔐 Sending password reset email for:', email);
+
+      // Send reset email via backend API
+      const response = await axios.post(
+        `${apiBaseUrl()}/auth/forgot-password`,
+        { email }
+      );
+
+      if (response.data.success) {
+        console.log('✅ Password reset email sent');
+      } else {
+        throw new Error(response.data.message || 'Failed to send reset email');
+      }
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to send reset email';
+      console.error('❌ Forgot password error:', errorMessage);
+      throw new Error(errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const resetPassword = async (token: string, newPassword: string) => {
+    try {
+      setIsLoading(true);
+      console.log('🔐 Resetting password with token');
+
+      // Reset password via backend API
+      const response = await axios.post(
+        `${apiBaseUrl()}/auth/reset-password/${token}`,
+        { password: newPassword }
+      );
+
+      if (response.data.success) {
+        console.log('✅ Password reset successful');
+      } else {
+        throw new Error(response.data.message || 'Failed to reset password');
+      }
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to reset password';
+      console.error('❌ Reset password error:', errorMessage);
+      throw new Error(errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const updateUserProfile = (profileData: any) => {
+    setProfileData(profileData);
+  };
+
   const value: AuthContextType = {
     user,
     firebaseUser,
@@ -470,6 +528,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     login,
     register,
     logout,
+    forgotPassword,
+    resetPassword,
     updateProfile: updateUserProfile,
     updateUserProfile: updateUserProfile,
   };

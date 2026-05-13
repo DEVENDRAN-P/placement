@@ -307,7 +307,19 @@ router.post(
         }),
       });
 
-      await user.save();
+      try {
+        await user.save();
+      } catch (err) {
+        if (err.code === 11000 || err.code === 'E11000') {
+          // user already exists
+          return res.status(409).json({
+            success: false,
+            message: "Email already registered. Please login or use a different email.",
+          });
+        } else {
+          throw err;
+        }
+      }
 
       // Create role-specific profile
       if (role === "student") {
@@ -596,23 +608,25 @@ router.post(
 
       let user = await User.findOne({ email });
 
-      // If user doesn't exist, create them
-      if (!user) {
-        user = new User({
-          email,
-          password: jwt.sign({ email }, process.env.JWT_SECRET), // Generate a random password for Firebase users
-          role,
-          profile: {
-            firstName,
-            lastName,
-            phone: phone || "",
-            avatar: photoURL || "",
-          },
-          isVerified: true, // Firebase users are considered verified
-          isFirebaseUser: true,
-        });
+       // If user doesn't exist, create them
+       if (!user) {
+         // Generate a random password for Firebase users (not used for login)
+         const randomPassword = Math.random().toString(36).slice(-8);
+         user = new User({
+           email,
+           password: randomPassword,
+           role,
+           profile: {
+             firstName,
+             lastName,
+             phone: phone || "",
+             avatar: photoURL || "",
+           },
+           isVerified: true, // Firebase users are considered verified
+           isFirebaseUser: true,
+         });
 
-        await user.save();
+         await user.save();
 
         // Create role-specific profile
         if (role === "student") {
@@ -765,6 +779,162 @@ router.post(
       });
     }
   },
+);
+
+// Forgot Password - Request reset
+router.post(
+  "/forgot-password",
+  [body("email").isEmail().normalizeEmail()],
+  async (req, res) => {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({
+          success: false,
+          message: "Validation failed",
+          errors: errors.array(),
+        });
+      }
+
+      const { email } = req.body;
+
+      // Find user by email
+      const user = await User.findOne({ email });
+
+      if (!user) {
+        // Don't reveal if email exists for security
+        return res.json({
+          success: true,
+          message: "If an account exists with this email, a password reset link has been sent.",
+        });
+      }
+
+      // Generate reset token (expires in 1 hour)
+      const resetToken = jwt.sign(
+        { email, userId: user._id },
+        process.env.JWT_SECRET,
+        { expiresIn: "1h" }
+      );
+
+      // Store reset token in user document
+      user.resetPasswordToken = resetToken;
+      user.resetPasswordExpire = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+      await user.save();
+
+      // Send reset email
+      try {
+        const transporter = nodemailer.createTransport({
+          host: process.env.EMAIL_HOST,
+          port: process.env.EMAIL_PORT,
+          secure: false,
+          auth: {
+            user: process.env.EMAIL_USER,
+            pass: process.env.EMAIL_PASS,
+          },
+        });
+
+        const resetUrl = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
+
+        const mailOptions = {
+          from: process.env.EMAIL_USER,
+          to: user.email,
+          subject: "Password Reset Request - Career Intelligence Portal",
+          html: `
+            <h2>Password Reset Request</h2>
+            <p>You requested to reset your password. Click the button below to proceed:</p>
+            <a href="${resetUrl}" style="background-color: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">Reset Password</a>
+            <p>Or copy and paste this link in your browser:</p>
+            <p>${resetUrl}</p>
+            <p>This link will expire in 1 hour.</p>
+            <p>If you did not request this, please ignore this email.</p>
+          `,
+        };
+
+        await transporter.sendMail(mailOptions);
+      } catch (emailError) {
+        console.warn("⚠️ Password reset email failed:", emailError.message);
+      }
+
+      res.json({
+        success: true,
+        message: "If an account exists with this email, a password reset link has been sent.",
+      });
+    } catch (error) {
+      console.error("Forgot password error:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to process password reset request",
+        error: process.env.NODE_ENV === "development" ? error.message : {},
+      });
+    }
+  }
+);
+
+// Reset Password
+router.post(
+  "/reset-password/:token",
+  [body("password").isLength({ min: 6 })],
+  async (req, res) => {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({
+          success: false,
+          message: "Validation failed",
+          errors: errors.array(),
+        });
+      }
+
+      const { token } = req.params;
+      const { password } = req.body;
+
+      // Verify token
+      let decoded;
+      try {
+        decoded = jwt.verify(token, process.env.JWT_SECRET);
+      } catch (err) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid or expired reset token",
+        });
+      }
+
+      // Find user and verify token
+      const user = await User.findOne({ _id: decoded.userId });
+
+      if (!user || user.resetPasswordToken !== token) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid or expired reset token",
+        });
+      }
+
+      if (user.resetPasswordExpire < new Date()) {
+        return res.status(400).json({
+          success: false,
+          message: "Reset token has expired. Please request a new one.",
+        });
+      }
+
+      // Update password
+      user.password = password;
+      user.resetPasswordToken = undefined;
+      user.resetPasswordExpire = undefined;
+      await user.save();
+
+      res.json({
+        success: true,
+        message: "Password reset successful. Please login with your new password.",
+      });
+    } catch (error) {
+      console.error("Reset password error:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to reset password",
+        error: process.env.NODE_ENV === "development" ? error.message : {},
+      });
+    }
+  }
 );
 
 // Logout

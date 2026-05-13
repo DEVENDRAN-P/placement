@@ -10,6 +10,8 @@ import RecruiterPage from './components/Recruiter/RecruiterPage';
 import Layout from './components/Layout/Layout';
 import Login from './components/Auth/Login';
 import Register from './components/Auth/Register';
+import ForgotPassword from './components/Auth/ForgotPassword';
+import ResetPassword from './components/Auth/ResetPassword';
 import StudentProfile from './components/Student/StudentProfile';
 import EnhancedStudentProfile from './components/Student/EnhancedStudentProfile';
 import CodingProfilesLinker from './components/Student/CodingProfilesLinker';
@@ -99,6 +101,8 @@ function AppContent() {
         {/* Public Auth Routes */}
         <Route path="/login" element={!isAuthenticated ? <Login /> : <Navigate to="/student" replace />} />
         <Route path="/register" element={!isAuthenticated ? <Register /> : <Navigate to="/student" replace />} />
+        <Route path="/forgot-password" element={!isAuthenticated ? <ForgotPassword /> : <Navigate to="/student" replace />} />
+        <Route path="/reset-password/:token" element={!isAuthenticated ? <ResetPassword /> : <Navigate to="/student" replace />} />
 
         {/* Protected Routes with Layout */}
         <Route path="/" element={<Layout />}>
