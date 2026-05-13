@@ -635,8 +635,14 @@ router.post(
         } else if (role === "college") {
           const college = new College({
             user: user._id,
-            code: `firebase-${Date.now()}`,
+            code: `FIREBASE-${Date.now()}`,
             name: `${firstName} ${lastName}`,
+            type: "Private", // Default to pass validation
+            address: {
+              city: "Not provided", // Default to pass validation
+              state: "Not provided",
+              country: "India",
+            },
           });
           await college.save();
         } else if (role === "recruiter") {
@@ -644,10 +650,11 @@ router.post(
             user: user._id,
             company: {
               name: "Not provided",
-              industry: "Not provided",
+              industry: "Other", // Must be in enum
             },
             hrDetails: {
               name: `${firstName} ${lastName}`,
+              designation: "Not provided", // Required
               email: email,
               phone: phone || "",
             },
